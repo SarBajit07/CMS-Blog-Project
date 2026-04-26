@@ -2,6 +2,8 @@
 
 import React, { createContext, useContext, useState, useEffect, ReactNode, useCallback } from 'react';
 import { apiFetch, setAccessToken } from '@/lib/api';
+import { toast } from 'sonner';
+import { useRouter } from 'next/navigation';
 
 interface User {
   id: number;
@@ -23,6 +25,7 @@ const AuthContext = createContext<AuthContextType | undefined>(undefined);
 export function AuthProvider({ children }: { children: ReactNode }) {
   const [user, setUser] = useState<User | null>(null);
   const [loading, setLoading] = useState(true);
+  const router = useRouter();
 
   // Function to initialize user via /me endpoint
   const initAuth = useCallback(async () => {
@@ -32,8 +35,6 @@ export function AuthProvider({ children }: { children: ReactNode }) {
         const { accessToken, user } = data.data;
         setAccessToken(accessToken);
         setUser(user);
-        // We can safely keep just the non-secret user object in localStorage for instant UI hydration, 
-        // though /me will always validate and give us the real token.
         localStorage.setItem('user', JSON.stringify(user));
       } else {
         throw new Error('Not authenticated');
@@ -63,11 +64,16 @@ export function AuthProvider({ children }: { children: ReactNode }) {
 
       if (data.success) {
         const { accessToken, user } = data.data;
-        setAccessToken(accessToken); // Store in memory
-        localStorage.setItem('user', JSON.stringify(user)); // Store profile info
+        setAccessToken(accessToken);
+        localStorage.setItem('user', JSON.stringify(user));
         setUser(user);
+        toast.success('Welcome back, ' + user.username + '!');
+        router.push('/');
+      } else {
+        toast.error(data.message || 'Login failed');
       }
     } catch (error: any) {
+      toast.error(error.message || 'Something went wrong during login');
       throw error;
     }
   };
@@ -80,9 +86,13 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
 
       if (data.success) {
-        // Registration successful
+        toast.success('Account created! You can now log in.');
+        router.push('/auth/login');
+      } else {
+        toast.error(data.message || 'Registration failed');
       }
     } catch (error: any) {
+      toast.error(error.message || 'Something went wrong during registration');
       throw error;
     }
   };
@@ -93,7 +103,15 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     setUser(null);
     
     // Call backend logout to clear refresh cookie
-    apiFetch('/auth/logout', { method: 'POST' }).catch(() => {});
+    apiFetch('/auth/logout', { method: 'POST' })
+      .then(() => {
+        toast.info('Logged out successfully');
+        router.push('/');
+      })
+      .catch(() => {
+        toast.info('Logged out locally');
+        router.push('/');
+      });
   };
 
   return (

@@ -127,3 +127,35 @@ body {
   border-color: var(--red);
   box-shadow: 0 0 0 3px rgba(239, 68, 68, 0.1);
 }
+
+/* ─── Blog Content ─────────────────────────────────────────────────── */
+.blog-content {
+  line-height: 1.8;
+  color: #1A1A1A;
+}
+.blog-content h1, .blog-content h2, .blog-content h3 {
+  font-family: 'Playfair Display', Georgia, serif;
+  margin-top: 2rem;
+  margin-bottom: 1rem;
+  font-weight: 400;
+}
+.blog-content h1 { font-size: 2.5rem; }
+.blog-content h2 { font-size: 2rem; }
+.blog-content h3 { font-size: 1.5rem; }
+.blog-content p {
+  margin-bottom: 1.5rem;
+}
+.blog-content ul, .blog-content ol {
+  margin-bottom: 1.5rem;
+  padding-left: 1.5rem;
+}
+.blog-content li {
+  margin-bottom: 0.5rem;
+}
+.blog-content blockquote {
+  border-left: 2px solid #1A1A1A;
+  padding-left: 1.5rem;
+  font-style: italic;
+  margin: 2rem 0;
+  font-weight: 300;
+}

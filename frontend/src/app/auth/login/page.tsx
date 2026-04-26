@@ -1,13 +1,13 @@
 'use client';
 
-import React, { useState } from 'react';
+import React from 'react';
 import Link from 'next/link';
-import { useRouter } from 'next/navigation';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { useAuth } from '@/context/AuthContext';
 import { Mail, Lock, ArrowRight, AlertCircle, Loader2 } from 'lucide-react';
+import GuestRoute from '@/components/auth/GuestRoute';
 
 // ─── Zod Schema ────────────────────────────────────────────────────────────────
 const loginSchema = z.object({
@@ -39,22 +39,21 @@ function Field({
   return (
     <div className="space-y-2">
       <div className="flex justify-between items-center">
-        <label className="text-xs tracking-widest uppercase font-medium" style={{ color: 'var(--cream-dim)' }}>
+        <label className="text-xs tracking-widest uppercase font-medium text-[#1A1A1A]">
           {label}
         </label>
         {aside}
       </div>
       <div className="relative">
         <div
-          className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none"
-          style={{ color: '#3A4A5E' }}
+          className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-[#777777]"
         >
           {icon}
         </div>
         {children}
       </div>
       {error && (
-        <p className="flex items-center gap-1.5 text-xs" style={{ color: 'var(--red)' }}>
+        <p className="flex items-center gap-1.5 text-xs text-[#E05555]">
           <AlertCircle size={11} />
           {error}
         </p>
@@ -64,7 +63,7 @@ function Field({
 }
 
 // ─── Component ─────────────────────────────────────────────────────────────────
-export default function LoginPage() {
+function LoginPage() {
   const {
     register,
     handleSubmit,
@@ -73,80 +72,32 @@ export default function LoginPage() {
     resolver: zodResolver(loginSchema),
   });
 
-  const [serverError, setServerError] = useState('');
   const { login } = useAuth();
-  const router = useRouter();
 
   const onSubmit = async (data: LoginFormValues) => {
-    setServerError('');
     try {
       await login(data.email, data.password);
-      router.push('/dashboard');
-    } catch (err: any) {
-      setServerError(err.message || 'Invalid credentials. Please try again.');
+    } catch (err) {
+      // Errors handled by AuthContext toasts
     }
   };
 
   return (
-    <div
-      className="min-h-[85vh] flex items-center justify-center px-4 py-16"
-      style={{ background: 'var(--bg)' }}
-    >
-      {/* Decorative glow */}
-      <div
-        className="absolute pointer-events-none"
-        style={{
-          width: '400px',
-          height: '300px',
-          background: 'radial-gradient(ellipse, rgba(201,169,110,0.06) 0%, transparent 70%)',
-          top: '10%',
-          left: '50%',
-          transform: 'translateX(-50%)',
-        }}
-      />
-
-      <div className="w-full max-w-sm relative z-10 animate-fade-up">
+    <div className="min-h-[85vh] flex items-center justify-center px-4 py-16 bg-[#FAFAFA]">
+      <div className="w-full max-w-sm relative z-10">
 
         {/* Header */}
-        <div className="mb-10">
-          <div className="flex items-center gap-3 mb-6">
-            <div style={{ height: '1px', width: '24px', background: 'var(--gold)' }} />
-            <span className="text-xs tracking-[0.25em] uppercase" style={{ color: 'var(--gold)' }}>
-              Welcome back
-            </span>
-          </div>
-          <h1
-            className="font-display"
-            style={{ fontSize: '38px', lineHeight: 1.1, color: 'var(--cream)' }}
-          >
-            Sign in to<br />
-            <em className="not-italic" style={{ color: 'var(--gold)' }}>MiniCMS</em>
+        <div className="mb-10 text-center">
+          <span className="text-xs tracking-[0.25em] uppercase text-[#777777] mb-4 block">
+            Welcome back
+          </span>
+          <h1 className="font-display text-4xl text-[#1A1A1A] leading-tight">
+            Sign in to MiniCMS
           </h1>
         </div>
 
         {/* Card */}
-        <div
-          className="grain-surface p-8 rounded-lg"
-          style={{
-            background: 'var(--surface)',
-            border: '1px solid var(--border)',
-          }}
-        >
-          {/* Server error */}
-          {serverError && (
-            <div
-              className="flex items-center gap-3 p-4 rounded mb-6 text-sm animate-fade-in"
-              style={{
-                background: 'rgba(224,85,85,0.1)',
-                border: '1px solid rgba(224,85,85,0.3)',
-                color: 'var(--red)',
-              }}
-            >
-              <AlertCircle size={16} className="shrink-0" />
-              {serverError}
-            </div>
-          )}
-
+        <div className="p-8 bg-white border border-[#1A1A1A] shadow-[8px_8px_0px_0px_#1A1A1A]">
           <form onSubmit={handleSubmit(onSubmit)} className="space-y-6" noValidate>
             <Field
               label="Email"
@@ -157,7 +108,7 @@ export default function LoginPage() {
                 type="email"
                 autoComplete="email"
                 placeholder="you@example.com"
-                className={`input-dark ${errors.email ? 'error' : ''}`}
+                className="w-full pl-11 pr-4 py-3 bg-white border border-[#1A1A1A] text-sm focus:outline-none focus:ring-0 rounded-none placeholder:text-[#AAAAAA]"
                 {...register('email')}
               />
             </Field>
@@ -169,10 +120,9 @@ export default function LoginPage() {
               aside={
                 <Link
                   href="#"
-                  className="text-xs link-underline"
-                  style={{ color: '#3A4A5E' }}
+                  className="text-[10px] uppercase tracking-wider font-bold text-[#777777] hover:text-[#1A1A1A]"
                 >
-                  Forgot password?
+                  Forgot?
                 </Link>
               }
             >
@@ -180,31 +130,22 @@ export default function LoginPage() {
                 type="password"
                 autoComplete="current-password"
                 placeholder="••••••••"
-                className={`input-dark ${errors.password ? 'error' : ''}`}
+                className="w-full pl-11 pr-4 py-3 bg-white border border-[#1A1A1A] text-sm focus:outline-none focus:ring-0 rounded-none placeholder:text-[#AAAAAA]"
                 {...register('password')}
               />
             </Field>
 
-            {/* Divider */}
-            <div style={{ height: '1px', background: 'var(--border)' }} />
-
             <button
               type="submit"
               disabled={isSubmitting}
-              className="w-full flex items-center justify-center gap-3 py-3.5 text-sm tracking-widest uppercase font-medium transition-all group"
-              style={{
-                background: isSubmitting ? 'var(--border)' : 'var(--gold)',
-                color: 'var(--bg)',
-                borderRadius: '4px',
-                cursor: isSubmitting ? 'not-allowed' : 'pointer',
-              }}
+              className="w-full flex items-center justify-center gap-3 py-4 bg-[#1A1A1A] text-white text-sm tracking-widest uppercase font-bold hover:bg-[#474747] transition-all disabled:opacity-50 disabled:cursor-not-allowed rounded-none mt-4"
             >
               {isSubmitting ? (
                 <Loader2 size={18} className="animate-spin" />
               ) : (
                 <>
                   Sign In
-                  <ArrowRight size={16} className="group-hover:translate-x-1 transition-transform" />
+                  <ArrowRight size={16} />
                 </>
               )}
             </button>
@@ -212,13 +153,21 @@ export default function LoginPage() {
         </div>
 
         {/* Footer link */}
-        <p className="text-center mt-8 text-sm font-light" style={{ color: '#3A4A5E' }}>
+        <p className="text-center mt-8 text-sm text-[#777777]">
           No account yet?{' '}
-          <Link href="/auth/register" className="link-underline" style={{ color: 'var(--cream-dim)' }}>
-            Create one — it&apos;s free
+          <Link href="/auth/register" className="font-bold text-[#1A1A1A] hover:underline underline-offset-4">
+            Create one
           </Link>
         </p>
       </div>
     </div>
+  );
+}
+
+export default function Login() {
+  return (
+    <GuestRoute>
+      <LoginPage />
+    </GuestRoute>
   );
 }

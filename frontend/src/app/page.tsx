@@ -1,33 +1,54 @@
 'use client';
 
+import { useState, useEffect } from 'react';
 import Link from 'next/link';
-import { ArrowRight } from 'lucide-react';
+import { ArrowRight, Loader2 } from 'lucide-react';
+import { apiFetch } from '@/lib/api';
 
-const featuredArticles = [
-  {
-    title: 'The Architecture of Silence',
-    excerpt: 'Exploring the role of negative space in modern digital environments and how the absence of information creates clarity.',
-    category: 'DESIGN',
-    date: 'OCT 24, 2024',
-    author: 'Elena Rostova'
-  },
-  {
-    title: 'Cognitive Load in the Era of AI',
-    excerpt: 'Why minimalist interfaces are no longer just an aesthetic choice, but a psychological necessity for focused work.',
-    category: 'TECHNOLOGY',
-    date: 'OCT 21, 2024',
-    author: 'Marcus Vance'
-  },
-  {
-    title: 'Return to the Broadsheet',
-    excerpt: 'A historical analysis of print media layouts and their surprising relevance in creating trustworthy digital platforms.',
-    category: 'EDITORIAL',
-    date: 'OCT 18, 2024',
-    author: 'Sarah Jenkins'
-  }
-];
+interface Post {
+  id: number;
+  title: string;
+  slug: string;
+  excerpt: string;
+  author_name: string;
+  published_at: string;
+  status: string;
+}
 
 export default function Home() {
+  const [posts, setPosts] = useState<Post[]>([]);
+  const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
+
+  useEffect(() => {
+    const fetchPosts = async () => {
+      try {
+        const response = await apiFetch('/posts');
+        if (response.success) {
+          setPosts(response.data.posts);
+        } else {
+          setError(response.message || 'Failed to fetch posts');
+        }
+      } catch (err: any) {
+        setError(err.message || 'An error occurred while fetching posts');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    fetchPosts();
+  }, []);
+
+  const formatDate = (dateString: string) => {
+    if (!dateString) return 'DRAFT';
+    const date = new Date(dateString);
+    return date.toLocaleDateString('en-US', {
+      month: 'short',
+      day: 'numeric',
+      year: 'numeric',
+    }).toUpperCase();
+  };
+
   return (
     <div className="min-h-screen bg-[#FAFAFA] text-[#1A1A1A] font-sans selection:bg-[#1A1A1A] selection:text-white">
       
@@ -69,32 +90,56 @@ export default function Home() {
           </Link>
         </div>
 
-        <div className="grid grid-cols-1 md:grid-cols-3 gap-0 border-t border-l border-[#1A1A1A]">
-          {featuredArticles.map((article, index) => (
-            <article 
-              key={index} 
-              className="p-8 border-r border-b border-[#1A1A1A] hover:bg-white transition-colors cursor-pointer group flex flex-col justify-between h-full min-h-[320px]"
+        {loading ? (
+          <div className="flex flex-col items-center justify-center py-24 border border-[#1A1A1A] bg-white">
+            <Loader2 className="animate-spin mb-4" size={32} />
+            <p className="text-xs tracking-widest uppercase font-bold">Curating the archive...</p>
+          </div>
+        ) : error ? (
+          <div className="p-12 border border-[#1A1A1A] bg-white text-center">
+            <p className="text-red-500 mb-4">{error}</p>
+            <button 
+              onClick={() => window.location.reload()}
+              className="text-xs font-bold tracking-widest uppercase border-b border-[#1A1A1A]"
             >
-              <div>
-                <div className="flex items-center gap-3 mb-6">
-                  <span className="text-xs font-bold tracking-widest uppercase">{article.category}</span>
-                  <span className="text-[#777777] text-xs">—</span>
-                  <span className="text-[#777777] text-xs font-mono">{article.date}</span>
-                </div>
-                <h3 className="font-display text-2xl leading-snug mb-4 group-hover:underline decoration-1 underline-offset-4">
-                  {article.title}
-                </h3>
-                <p className="text-[#474747] text-sm leading-relaxed font-light">
-                  {article.excerpt}
-                </p>
-              </div>
-              
-              <div className="mt-8 pt-4 border-t border-[#E5E5E5] text-xs font-semibold tracking-wide uppercase text-[#1A1A1A]">
-                By {article.author}
-              </div>
-            </article>
-          ))}
-        </div>
+              Retry Connection
+            </button>
+          </div>
+        ) : posts.length === 0 ? (
+          <div className="p-24 border border-[#1A1A1A] bg-white text-center">
+            <h3 className="font-display text-3xl mb-4">The press is quiet.</h3>
+            <p className="text-[#474747] font-light italic">No published articles were found in our records.</p>
+          </div>
+        ) : (
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-0 border-t border-l border-[#1A1A1A]">
+            {posts.map((post) => (
+              <article 
+                key={post.id} 
+                className="p-8 border-r border-b border-[#1A1A1A] hover:bg-white transition-colors cursor-pointer group flex flex-col justify-between h-full min-h-[320px]"
+              >
+                <Link href={`/blog/${post.slug}`} className="contents">
+                  <div>
+                    <div className="flex items-center gap-3 mb-6">
+                      <span className="text-xs font-bold tracking-widest uppercase">STORY</span>
+                      <span className="text-[#777777] text-xs">—</span>
+                      <span className="text-[#777777] text-xs font-mono">{formatDate(post.published_at)}</span>
+                    </div>
+                    <h3 className="font-display text-2xl leading-snug mb-4 group-hover:underline decoration-1 underline-offset-4">
+                      {post.title}
+                    </h3>
+                    <p className="text-[#474747] text-sm leading-relaxed font-light">
+                      {post.excerpt || (post.body ? post.body.substring(0, 150) + '...' : '')}
+                    </p>
+                  </div>
+                  
+                  <div className="mt-8 pt-4 border-t border-[#E5E5E5] text-xs font-semibold tracking-wide uppercase text-[#1A1A1A]">
+                    By {post.author_name}
+                  </div>
+                </Link>
+              </article>
+            ))}
+          </div>
+        )}
       </section>
 
       {/* ── Manifesto Section ───────────────────────────────────────── */}

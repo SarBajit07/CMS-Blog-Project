@@ -3,102 +3,75 @@
 import React, { useState } from 'react';
 import Link from 'next/link';
 import { useAuth } from '@/context/AuthContext';
-import { Menu, X, LogOut, User, LayoutDashboard, Feather } from 'lucide-react';
+import { Menu, X, LogOut, LayoutDashboard, Feather } from 'lucide-react';
 
 export default function Navbar() {
   const { user, logout } = useAuth();
   const [isOpen, setIsOpen] = useState(false);
 
   return (
-    <nav
-      style={{
-        background: '#FAFAFA',
-        borderBottom: '1px solid #1A1A1A',
-      }}
-      className="sticky top-0 z-50"
-    >
+    <nav className="sticky top-0 z-50 bg-[#FAFAFA] border-b border-[#1A1A1A]">
       <div className="max-w-6xl mx-auto px-6 lg:px-8">
-        <div className="flex items-center justify-between h-16">
+        <div className="flex items-center justify-between h-20">
 
           {/* Logo */}
           <Link href="/" className="flex items-center gap-3 group">
-            <div
-              className="w-8 h-8 flex items-center justify-center bg-[#1A1A1A] text-white"
-            >
-              <Feather size={16} strokeWidth={2.5} />
+            <div className="w-9 h-9 flex items-center justify-center bg-[#1A1A1A] text-white">
+              <Feather size={18} strokeWidth={2.5} />
             </div>
-            <span
-              className="font-display text-2xl tracking-wide text-[#1A1A1A]"
-            >
+            <span className="font-display text-2xl tracking-tight text-[#1A1A1A]">
               The Archive
             </span>
           </Link>
 
           {/* Desktop links */}
-          <div className="hidden md:flex items-center gap-8">
-            <Link
-              href="/"
-              className="link-underline text-sm font-light tracking-widest uppercase"
-              style={{ color: 'var(--cream-dim)' }}
-            >
-              Home
-            </Link>
+          <div className="hidden md:flex items-center gap-10">
             <Link
               href="/blog"
-              className="link-underline text-sm font-light tracking-widest uppercase"
-              style={{ color: 'var(--cream-dim)' }}
+              className="text-[11px] font-bold tracking-[0.2em] uppercase text-[#1A1A1A] hover:text-[#777777] transition-colors"
             >
               Stories
             </Link>
 
-            {/* Divider */}
-            <div style={{ width: '1px', height: '20px', background: 'var(--border)' }} />
-
             {user ? (
-              <div className="flex items-center gap-5">
+              <div className="flex items-center gap-8">
                 <Link
                   href="/dashboard"
-                  className="flex items-center gap-2 text-sm font-light tracking-wider uppercase link-underline"
-                  style={{ color: 'var(--cream-dim)' }}
+                  className="flex items-center gap-2 text-[11px] font-bold tracking-[0.2em] uppercase text-[#1A1A1A] hover:text-[#777777] transition-colors"
                 >
                   <LayoutDashboard size={14} />
                   Dashboard
                 </Link>
 
-                <div
-                  className="flex items-center gap-2 pl-3 pr-2 py-1.5 border border-[#1A1A1A] bg-white"
-                >
-                  <div
-                    className="w-6 h-6 flex items-center justify-center text-xs bg-[#1A1A1A] text-white font-bold"
-                  >
-                    {user.username.charAt(0).toUpperCase()}
+                <div className="flex items-center gap-4 pl-4 border-l border-[#1A1A1A]">
+                  <div className="flex items-center gap-2">
+                    <div className="w-6 h-6 flex items-center justify-center text-[10px] bg-[#1A1A1A] text-white font-bold">
+                      {user.username.charAt(0).toUpperCase()}
+                    </div>
+                    <span className="text-[11px] font-bold uppercase tracking-wider text-[#1A1A1A]">
+                      {user.username}
+                    </span>
                   </div>
-                  <span className="text-xs font-medium" style={{ color: 'var(--cream)' }}>
-                    {user.username}
-                  </span>
                   <button
                     onClick={logout}
-                    className="ml-1 p-1 rounded-full transition-colors"
-                    style={{ color: 'var(--cream-dim)' }}
+                    className="p-1 text-[#1A1A1A] hover:text-[#E05555] transition-colors"
                     title="Logout"
-                    onMouseEnter={e => (e.currentTarget.style.color = 'var(--red)')}
-                    onMouseLeave={e => (e.currentTarget.style.color = 'var(--cream-dim)')}
                   >
-                    <LogOut size={13} />
+                    <LogOut size={14} />
                   </button>
                 </div>
               </div>
             ) : (
-              <div className="flex items-center gap-5">
+              <div className="flex items-center gap-8">
                 <Link
                   href="/auth/login"
-                  className="text-sm font-semibold tracking-widest uppercase text-[#474747] hover:text-[#1A1A1A] transition-colors"
+                  className="text-[11px] font-bold tracking-[0.2em] uppercase text-[#1A1A1A] hover:text-[#777777] transition-colors"
                 >
                   Login
                 </Link>
                 <Link
                   href="/auth/register"
-                  className="px-6 py-2.5 text-xs font-bold tracking-widest uppercase bg-[#1A1A1A] text-white hover:bg-[#474747] transition-colors"
+                  className="px-6 py-3 text-[11px] font-bold tracking-[0.2em] uppercase bg-[#1A1A1A] text-white hover:bg-[#474747] transition-colors"
                 >
                   Start Writing
                 </Link>
@@ -108,50 +81,37 @@ export default function Navbar() {
 
           {/* Mobile menu button */}
           <button
-            className="md:hidden p-2"
+            className="md:hidden p-2 text-[#1A1A1A]"
             onClick={() => setIsOpen(!isOpen)}
-            style={{ color: 'var(--cream-dim)' }}
           >
-            {isOpen ? <X size={22} /> : <Menu size={22} />}
+            {isOpen ? <X size={24} /> : <Menu size={24} />}
           </button>
         </div>
       </div>
 
       {/* Mobile menu */}
       {isOpen && (
-        <div
-          className="md:hidden px-6 pb-6 pt-2 space-y-1"
-          style={{ borderTop: '1px solid var(--border)' }}
-        >
-          {[
-            { href: '/', label: 'Home' },
-            { href: '/blog', label: 'Stories' },
-          ].map(({ href, label }) => (
-            <Link
-              key={href}
-              href={href}
-              onClick={() => setIsOpen(false)}
-              className="block py-3 text-sm tracking-widest uppercase"
-              style={{ color: 'var(--cream-dim)', borderBottom: '1px solid var(--border)' }}
-            >
-              {label}
-            </Link>
-          ))}
+        <div className="md:hidden bg-white border-t border-[#1A1A1A] px-6 py-8 space-y-6 animate-fade-in">
+          <Link
+            href="/blog"
+            onClick={() => setIsOpen(false)}
+            className="block text-sm font-bold tracking-[0.2em] uppercase text-[#1A1A1A]"
+          >
+            Stories
+          </Link>
 
           {user ? (
             <>
               <Link
                 href="/dashboard"
                 onClick={() => setIsOpen(false)}
-                className="block py-3 text-sm tracking-widest uppercase"
-                style={{ color: 'var(--cream-dim)', borderBottom: '1px solid var(--border)' }}
+                className="block text-sm font-bold tracking-[0.2em] uppercase text-[#1A1A1A]"
               >
                 Dashboard
               </Link>
               <button
                 onClick={() => { logout(); setIsOpen(false); }}
-                className="block py-3 text-sm tracking-widest uppercase"
-                style={{ color: 'var(--red)' }}
+                className="block text-sm font-bold tracking-[0.2em] uppercase text-[#E05555]"
               >
                 Logout
               </button>
@@ -161,16 +121,14 @@ export default function Navbar() {
               <Link
                 href="/auth/login"
                 onClick={() => setIsOpen(false)}
-                className="block py-3 text-sm tracking-widest uppercase"
-                style={{ color: 'var(--cream-dim)', borderBottom: '1px solid var(--border)' }}
+                className="block text-sm font-bold tracking-[0.2em] uppercase text-[#1A1A1A]"
               >
                 Login
               </Link>
               <Link
                 href="/auth/register"
                 onClick={() => setIsOpen(false)}
-                className="block py-3 text-sm tracking-widest uppercase"
-                style={{ color: 'var(--gold)' }}
+                className="block text-sm font-bold tracking-[0.2em] uppercase text-[#1A1A1A]"
               >
                 Start Writing
               </Link>

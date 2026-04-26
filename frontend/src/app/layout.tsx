@@ -3,6 +3,7 @@ import "./globals.css";
 import { AuthProvider } from "@/context/AuthContext";
 import Navbar from "@/components/layout/Navbar";
 import Footer from "@/components/layout/Footer";
+import { Toaster } from 'sonner';
 
 export const metadata: Metadata = {
   title: "MiniCMS — Where stories live",
@@ -24,6 +25,7 @@ export default function RootLayout({
       </head>
       <body className="flex flex-col min-h-screen">
         <AuthProvider>
+          <Toaster position="top-right" richColors closeButton />
           <Navbar />
           <main className="flex-grow">
             {children}
