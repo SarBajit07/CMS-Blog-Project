@@ -1,5 +1,6 @@
 'use client';
 
+import Link from 'next/link';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import { useAuth } from '@/context/AuthContext';
 
@@ -43,9 +44,12 @@ function DashboardPage() {
                 Ready to share something new with the world?
               </p>
             </div>
-            <button className="w-full py-3 bg-[#1A1A1A] text-white text-xs tracking-widest uppercase font-bold hover:bg-[#474747] transition-colors">
+            <Link 
+              href="/dashboard/posts/new"
+              className="w-full py-3 bg-[#1A1A1A] text-white text-xs tracking-widest uppercase font-bold hover:bg-[#474747] transition-colors text-center block"
+            >
               Create New Story
-            </button>
+            </Link>
           </div>
         </div>
       </div>
