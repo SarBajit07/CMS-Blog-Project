@@ -54,6 +54,15 @@ const deleteById = async (id) => {
   return result.rows[0];
 };
 
+const getByAuthor = async (author_id) => {
+  const result = await db.query(`
+    SELECT * FROM posts 
+    WHERE author_id = $1 AND deleted_at IS NULL
+    ORDER BY created_at DESC
+  `, [author_id]);
+  return result.rows;
+};
+
 module.exports = {
   getAll,
   getBySlug,
@@ -61,4 +70,5 @@ module.exports = {
   create,
   update,
   deleteById,
+  getByAuthor,
 };

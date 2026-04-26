@@ -110,10 +110,23 @@ const deletePost = async (req, res, next) => {
   }
 };
 
+// @desc    Get all posts for the logged in user
+// @route   GET /api/posts/me  (protected)
+const getMyPosts = async (req, res, next) => {
+  try {
+    const author_id = req.user.id;
+    const posts = await PostModel.getByAuthor(author_id);
+    return response.success(res, 200, { posts });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   getPosts,
   getPost,
   createPost,
   updatePost,
   deletePost,
+  getMyPosts,
 };

@@ -32,6 +32,20 @@ router.get('/', postController.getPosts);
 
 /**
  * @swagger
+ * /api/posts/me:
+ *   get:
+ *     summary: Get all posts by logged in author
+ *     tags: [Posts]
+ *     security:
+ *       - bearerAuth: []
+ *     responses:
+ *       200:
+ *         description: List of author's posts
+ */
+router.get('/me', protect, postController.getMyPosts);
+
+/**
+ * @swagger
  * /api/posts/{slug}:
  *   get:
  *     summary: Get post by slug
