@@ -20,6 +20,7 @@ function DashboardPage() {
   const [posts, setPosts] = useState<Post[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
+  const [isDeleting, setIsDeleting] = useState<number | null>(null);
 
   useEffect(() => {
     const fetchMyPosts = async () => {
@@ -39,6 +40,28 @@ function DashboardPage() {
 
     fetchMyPosts();
   }, []);
+
+  const handleDelete = async (id: number) => {
+    if (!window.confirm("Are you sure you want to delete this story? This action cannot be undone.")) {
+      return;
+    }
+    
+    setIsDeleting(id);
+    try {
+      const response = await apiFetch(`/posts/${id}`, {
+        method: 'DELETE',
+      });
+      if (response.success) {
+        setPosts((prev) => prev.filter(p => p.id !== id));
+      } else {
+        alert(response.message || 'Failed to delete post');
+      }
+    } catch (err: any) {
+      alert(err.message || 'An unexpected error occurred while deleting');
+    } finally {
+      setIsDeleting(null);
+    }
+  };
 
   const formatDate = (dateString: string) => {
     if (!dateString) return 'N/A';
@@ -162,11 +185,19 @@ function DashboardPage() {
                     </div>
 
                     <div className="col-span-1 md:col-span-2 flex items-center md:justify-end gap-4 mt-4 md:mt-0 opacity-100 md:opacity-0 group-hover:opacity-100 transition-opacity">
-                      <button className="text-xs font-bold tracking-widest uppercase hover:text-[#777777] flex items-center gap-1">
+                      <Link 
+                        href={`/dashboard/posts/${post.id}/edit`}
+                        className="text-xs font-bold tracking-widest uppercase hover:text-[#777777] flex items-center gap-1"
+                      >
                         <Edit3 size={14} /> Edit
-                      </button>
-                      <button className="text-xs font-bold tracking-widest uppercase text-[#E05555] hover:text-[#B91C1C] flex items-center gap-1">
-                        <Trash2 size={14} /> Delete
+                      </Link>
+                      <button 
+                        onClick={() => handleDelete(post.id)}
+                        disabled={isDeleting === post.id}
+                        className="text-xs font-bold tracking-widest uppercase text-[#E05555] hover:text-[#B91C1C] flex items-center gap-1 disabled:opacity-50"
+                      >
+                        {isDeleting === post.id ? <Loader2 size={14} className="animate-spin" /> : <Trash2 size={14} />} 
+                        Delete
                       </button>
                     </div>
 

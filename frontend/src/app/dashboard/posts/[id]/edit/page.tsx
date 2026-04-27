@@ -1,7 +1,7 @@
 'use client';
 
-import { useState } from 'react';
-import { useRouter } from 'next/navigation';
+import { useState, useEffect } from 'react';
+import { useRouter, useParams } from 'next/navigation';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
 import { zodResolver } from '@hookform/resolvers/zod';
@@ -21,8 +21,13 @@ const postSchema = z.object({
 
 type PostFormData = z.infer<typeof postSchema>;
 
-function CreatePostPage() {
+function EditPostPage() {
   const router = useRouter();
+  const params = useParams();
+  const id = params?.id as string;
+
+  const [loading, setLoading] = useState(true);
+  const [fetchError, setFetchError] = useState<string | null>(null);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
   const {
@@ -30,6 +35,7 @@ function CreatePostPage() {
     handleSubmit,
     setValue,
     watch,
+    reset,
     formState: { errors, isSubmitting },
   } = useForm<PostFormData>({
     resolver: zodResolver(postSchema),
@@ -44,11 +50,39 @@ function CreatePostPage() {
 
   const currentStatus = watch('status');
 
+  useEffect(() => {
+    const fetchPost = async () => {
+      try {
+        const response = await apiFetch(`/posts/id/${id}`);
+        if (response.success) {
+          const post = response.data.post;
+          reset({
+            title: post.title,
+            excerpt: post.excerpt || '',
+            body: post.body,
+            cover_image_url: post.cover_image_url || '',
+            status: post.status,
+          });
+        } else {
+          setFetchError(response.message || 'Failed to load story');
+        }
+      } catch (err: any) {
+        setFetchError(err.message || 'An error occurred');
+      } finally {
+        setLoading(false);
+      }
+    };
+
+    if (id) {
+      fetchPost();
+    }
+  }, [id, reset]);
+
   const onSubmit = async (data: PostFormData) => {
     setSubmitError(null);
     try {
-      const response = await apiFetch('/posts', {
-        method: 'POST',
+      const response = await apiFetch(`/posts/${id}`, {
+        method: 'PUT',
         body: JSON.stringify(data),
       });
 
@@ -57,12 +91,32 @@ function CreatePostPage() {
         router.push('/dashboard');
         router.refresh();
       } else {
-        setSubmitError(response.message || 'Failed to create story');
+        setSubmitError(response.message || 'Failed to update story');
       }
     } catch (err: any) {
       setSubmitError(err.message || 'An unexpected error occurred');
     }
   };
+
+  if (loading) {
+    return (
+      <div className="min-h-screen bg-[#FAFAFA] flex items-center justify-center">
+        <Loader2 className="animate-spin text-[#1A1A1A]" size={32} />
+      </div>
+    );
+  }
+
+  if (fetchError) {
+    return (
+      <div className="min-h-screen bg-[#FAFAFA] flex flex-col items-center justify-center p-6 text-center">
+        <h1 className="font-display text-4xl mb-4">Error loading edition</h1>
+        <p className="text-[#474747] mb-8">{fetchError}</p>
+        <Link href="/dashboard" className="px-8 py-3 bg-[#1A1A1A] text-white text-xs tracking-widest uppercase font-bold transition-colors hover:bg-[#474747]">
+          Back to Workspace
+        </Link>
+      </div>
+    );
+  }
 
   return (
     <div className="min-h-screen bg-[#FAFAFA] text-[#1A1A1A] p-8 md:p-16">
@@ -73,13 +127,13 @@ function CreatePostPage() {
 
         <header className="mb-12 border-b border-[#1A1A1A] pb-8">
           <span className="text-xs font-bold tracking-[0.2em] uppercase text-[#777777] mb-4 block">
-            New Edition
+            Edit Edition
           </span>
           <h1 className="font-display text-5xl md:text-6xl mb-4">
-            Compose Story
+            Revise Story
           </h1>
           <p className="text-lg text-[#474747] font-light max-w-2xl">
-            Draft your thoughts, shape your narrative, and prepare it for the broadsheet.
+            Make adjustments to your narrative before or after it goes to print.
           </p>
         </header>
 
@@ -178,7 +232,7 @@ function CreatePostPage() {
                   <Loader2 className="animate-spin" size={14} /> Saving
                 </>
               ) : (
-                'Save Changes'
+                'Update Story'
               )}
             </button>
           </div>
@@ -188,10 +242,10 @@ function CreatePostPage() {
   );
 }
 
-export default function CreatePost() {
+export default function EditPost() {
   return (
     <ProtectedRoute>
-      <CreatePostPage />
+      <EditPostPage />
     </ProtectedRoute>
   );
 }

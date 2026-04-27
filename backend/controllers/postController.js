@@ -122,6 +122,28 @@ const getMyPosts = async (req, res, next) => {
   }
 };
 
+// @desc    Get a post by ID for editing
+// @route   GET /api/posts/id/:id  (protected)
+const getPostById = async (req, res, next) => {
+  try {
+    const { id } = req.params;
+    const post = await PostModel.getById(id);
+    
+    if (!post) {
+      return response.error(res, 404, 'Post not found');
+    }
+    
+    // Verify ownership
+    if (req.user.role !== 'admin' && post.author_id !== req.user.id) {
+      return response.error(res, 403, 'You can only view your own posts');
+    }
+    
+    return response.success(res, 200, { post });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   getPosts,
   getPost,
@@ -129,4 +151,5 @@ module.exports = {
   updatePost,
   deletePost,
   getMyPosts,
+  getPostById,
 };

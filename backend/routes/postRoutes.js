@@ -46,6 +46,30 @@ router.get('/me', protect, postController.getMyPosts);
 
 /**
  * @swagger
+ * /api/posts/id/{id}:
+ *   get:
+ *     summary: Get post by ID (for editing)
+ *     tags: [Posts]
+ *     security:
+ *       - bearerAuth: []
+ *     parameters:
+ *       - in: path
+ *         name: id
+ *         required: true
+ *         schema:
+ *           type: integer
+ *     responses:
+ *       200:
+ *         description: Post data
+ *       403:
+ *         description: Forbidden
+ *       404:
+ *         description: Post not found
+ */
+router.get('/id/:id', protect, postController.getPostById);
+
+/**
+ * @swagger
  * /api/posts/{slug}:
  *   get:
  *     summary: Get post by slug
