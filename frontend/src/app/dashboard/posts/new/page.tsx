@@ -1,6 +1,6 @@
 'use client';
 
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
 import { useRouter } from 'next/navigation';
 import Link from 'next/link';
 import { useForm } from 'react-hook-form';
@@ -17,6 +17,8 @@ const postSchema = z.object({
   body: z.string().min(1, 'Story content is required'),
   status: z.enum(['draft', 'published']),
   cover_image_url: z.string().url('Must be a valid URL').optional().or(z.literal('')),
+  categoryIds: z.array(z.number()).optional(),
+  tagIds: z.array(z.number()).optional(),
 });
 
 type PostFormData = z.infer<typeof postSchema>;
@@ -24,6 +26,24 @@ type PostFormData = z.infer<typeof postSchema>;
 function CreatePostPage() {
   const router = useRouter();
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [categories, setCategories] = useState<{id: number, name: string}[]>([]);
+  const [tags, setTags] = useState<{id: number, name: string}[]>([]);
+
+  useEffect(() => {
+    const fetchMetadata = async () => {
+      try {
+        const [catsRes, tagsRes] = await Promise.all([
+          apiFetch('/categories'),
+          apiFetch('/tags')
+        ]);
+        if (catsRes.success) setCategories(catsRes.data.categories);
+        if (tagsRes.success) setTags(tagsRes.data.tags);
+      } catch (err) {
+        console.error('Failed to fetch categories/tags', err);
+      }
+    };
+    fetchMetadata();
+  }, []);
 
   const {
     register,
@@ -39,6 +59,8 @@ function CreatePostPage() {
       body: '',
       cover_image_url: '',
       status: 'draft',
+      categoryIds: [],
+      tagIds: [],
     },
   });
 
@@ -147,6 +169,66 @@ function CreatePostPage() {
               {...register('cover_image_url')}
             />
             {errors.cover_image_url && <p className="mt-2 text-xs text-[#E05555]">{errors.cover_image_url.message}</p>}
+          </div>
+
+          <div className="grid grid-cols-1 md:grid-cols-2 gap-8">
+            {/* Categories */}
+            <div>
+              <label className="block text-xs font-bold tracking-widest uppercase text-[#1A1A1A] mb-2">
+                Categories
+              </label>
+              <div className="space-y-2 border border-[#1A1A1A] bg-white p-4 max-h-48 overflow-y-auto">
+                {categories.length === 0 ? (
+                  <p className="text-sm text-[#777777] italic">No categories available</p>
+                ) : (
+                  categories.map(cat => (
+                    <label key={cat.id} className="flex items-center gap-2 cursor-pointer text-sm">
+                      <input
+                        type="checkbox"
+                        value={cat.id}
+                        className="accent-[#1A1A1A]"
+                        {...register('categoryIds', {
+                          setValueAs: (value) => {
+                            if (!value) return [];
+                            return Array.isArray(value) ? value.map(Number) : [Number(value)];
+                          }
+                        })}
+                      />
+                      {cat.name}
+                    </label>
+                  ))
+                )}
+              </div>
+            </div>
+
+            {/* Tags */}
+            <div>
+              <label className="block text-xs font-bold tracking-widest uppercase text-[#1A1A1A] mb-2">
+                Tags
+              </label>
+              <div className="space-y-2 border border-[#1A1A1A] bg-white p-4 max-h-48 overflow-y-auto">
+                {tags.length === 0 ? (
+                  <p className="text-sm text-[#777777] italic">No tags available</p>
+                ) : (
+                  tags.map(tag => (
+                    <label key={tag.id} className="flex items-center gap-2 cursor-pointer text-sm">
+                      <input
+                        type="checkbox"
+                        value={tag.id}
+                        className="accent-[#1A1A1A]"
+                        {...register('tagIds', {
+                          setValueAs: (value) => {
+                            if (!value) return [];
+                            return Array.isArray(value) ? value.map(Number) : [Number(value)];
+                          }
+                        })}
+                      />
+                      {tag.name}
+                    </label>
+                  ))
+                )}
+              </div>
+            </div>
           </div>
 
           {/* Actions */}

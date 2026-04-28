@@ -31,7 +31,7 @@ const getPost = async (req, res, next) => {
 // @route   POST /api/posts  (protected)
 const createPost = async (req, res, next) => {
   try {
-    const { title, excerpt, body, cover_image_url, status } = req.body;
+    const { title, excerpt, body, cover_image_url, status, categoryIds, tagIds } = req.body;
     const author_id = req.user.id;
     const slug = slugify(title, { lower: true, strict: true });
 
@@ -45,7 +45,17 @@ const createPost = async (req, res, next) => {
       status: status || 'draft',
     });
 
-    return response.success(res, 201, { post: newPost }, 'Post created successfully');
+    if (categoryIds) {
+      await PostModel.setCategories(newPost.id, categoryIds);
+    }
+    if (tagIds) {
+      await PostModel.setTags(newPost.id, tagIds);
+    }
+
+    // Fetch the complete post with categories and tags
+    const fullPost = await PostModel.getById(newPost.id);
+
+    return response.success(res, 201, { post: fullPost }, 'Post created successfully');
   } catch (err) {
     // Handle unique slug conflict
     if (err.code === '23505') {
@@ -60,7 +70,7 @@ const createPost = async (req, res, next) => {
 const updatePost = async (req, res, next) => {
   try {
     const { id } = req.params;
-    const { title, excerpt, body, cover_image_url, status } = req.body;
+    const { title, excerpt, body, cover_image_url, status, categoryIds, tagIds } = req.body;
 
     // Verify ownership (author can only edit own posts, admin can edit any)
     const existing = await PostModel.getById(id);
@@ -82,7 +92,16 @@ const updatePost = async (req, res, next) => {
       status: status || existing.status,
     });
 
-    return response.success(res, 200, { post: updatedPost }, 'Post updated successfully');
+    if (categoryIds !== undefined) {
+      await PostModel.setCategories(id, categoryIds);
+    }
+    if (tagIds !== undefined) {
+      await PostModel.setTags(id, tagIds);
+    }
+
+    const fullPost = await PostModel.getById(id);
+
+    return response.success(res, 200, { post: fullPost }, 'Post updated successfully');
   } catch (err) {
     next(err);
   }

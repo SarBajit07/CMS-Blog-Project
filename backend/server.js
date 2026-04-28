@@ -11,6 +11,8 @@ require('./config/db');
 const authRoutes = require('./routes/authRoutes');
 const userRoutes = require('./routes/userRoutes');
 const postRoutes = require('./routes/postRoutes');
+const categoryRoutes = require('./routes/categoryRoutes');
+const tagRoutes = require('./routes/tagRoutes');
 
 // Middleware imports
 const { errorHandler, notFound } = require('./middlewares/errorMiddleware');
@@ -34,6 +36,8 @@ app.use('/api-docs', swaggerUi.serve, swaggerUi.setup(swaggerSpecs));
 app.use('/api/auth', authRoutes);
 app.use('/api/users', userRoutes);
 app.use('/api/posts', postRoutes);
+app.use('/api/categories', categoryRoutes);
+app.use('/api/tags', tagRoutes);
 
 // Health check
 app.get('/', (req, res) => {

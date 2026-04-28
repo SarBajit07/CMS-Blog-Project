@@ -13,30 +13,48 @@ interface Post {
   author_name: string;
   published_at: string;
   status: string;
+  categories?: { id: number; name: string; slug: string }[];
+  tags?: { id: number; name: string; slug: string }[];
+}
+
+interface Category {
+  id: number;
+  name: string;
+  slug: string;
 }
 
 export default function Home() {
   const [posts, setPosts] = useState<Post[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchPosts = async () => {
+    const fetchData = async () => {
       try {
-        const response = await apiFetch('/posts');
-        if (response.success) {
-          setPosts(response.data.posts);
+        const [postsResponse, categoriesResponse] = await Promise.all([
+          apiFetch('/posts'),
+          apiFetch('/categories')
+        ]);
+        
+        if (postsResponse.success) {
+          setPosts(postsResponse.data.posts);
         } else {
-          setError(response.message || 'Failed to fetch posts');
+          setError(postsResponse.message || 'Failed to fetch posts');
+        }
+
+        if (categoriesResponse.success) {
+          setCategories(categoriesResponse.data.categories);
         }
       } catch (err: any) {
-        setError(err.message || 'An error occurred while fetching posts');
+        setError(err.message || 'An error occurred while fetching data');
       } finally {
         setLoading(false);
       }
     };
 
-    fetchPosts();
+    fetchData();
   }, []);
 
   const formatDate = (dateString: string) => {
@@ -48,6 +66,10 @@ export default function Home() {
       year: 'numeric',
     }).toUpperCase();
   };
+
+  const filteredPosts = selectedCategory 
+    ? posts.filter(post => post.categories?.some(cat => cat.slug === selectedCategory))
+    : posts;
 
   return (
     <div className="min-h-screen bg-[#FAFAFA] text-[#1A1A1A] font-sans selection:bg-[#1A1A1A] selection:text-white">
@@ -83,9 +105,36 @@ export default function Home() {
 
       {/* ── Editorial Grid ─────────────────────────────────────────── */}
       <section className="max-w-6xl mx-auto px-6 lg:px-8 py-24">
-        <div className="flex items-center justify-between mb-12 border-b border-[#1A1A1A] pb-4">
+        <div className="flex flex-col md:flex-row md:items-center justify-between mb-12 border-b border-[#1A1A1A] pb-4 gap-4">
           <h2 className="font-display text-3xl">Latest Editions</h2>
-          <Link href="/blog" className="text-sm font-semibold tracking-wider uppercase flex items-center gap-2 hover:text-[#474747] transition-colors">
+          
+          <div className="flex items-center gap-4 overflow-x-auto pb-2 md:pb-0 scrollbar-hide">
+            <button
+              onClick={() => setSelectedCategory(null)}
+              className={`text-xs font-semibold tracking-wider uppercase whitespace-nowrap px-3 py-1 border transition-colors ${
+                selectedCategory === null 
+                  ? 'bg-[#1A1A1A] text-white border-[#1A1A1A]' 
+                  : 'bg-transparent text-[#1A1A1A] border-transparent hover:border-[#1A1A1A]'
+              }`}
+            >
+              All
+            </button>
+            {categories.map((cat) => (
+              <button
+                key={cat.id}
+                onClick={() => setSelectedCategory(cat.slug)}
+                className={`text-xs font-semibold tracking-wider uppercase whitespace-nowrap px-3 py-1 border transition-colors ${
+                  selectedCategory === cat.slug 
+                    ? 'bg-[#1A1A1A] text-white border-[#1A1A1A]' 
+                    : 'bg-transparent text-[#1A1A1A] border-[#E5E5E5] hover:border-[#1A1A1A]'
+                }`}
+              >
+                {cat.name}
+              </button>
+            ))}
+          </div>
+
+          <Link href="/blog" className="text-sm font-semibold tracking-wider uppercase flex items-center gap-2 hover:text-[#474747] transition-colors whitespace-nowrap">
             View All <ArrowRight size={16} />
           </Link>
         </div>
@@ -105,22 +154,24 @@ export default function Home() {
               Retry Connection
             </button>
           </div>
-        ) : posts.length === 0 ? (
+        ) : filteredPosts.length === 0 ? (
           <div className="p-24 border border-[#1A1A1A] bg-white text-center">
-            <h3 className="font-display text-3xl mb-4">The press is quiet.</h3>
-            <p className="text-[#474747] font-light italic">No published articles were found in our records.</p>
+            <h3 className="font-display text-3xl mb-4">No stories found.</h3>
+            <p className="text-[#474747] font-light italic">There are no published articles in this category.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-0 border-t border-l border-[#1A1A1A]">
-            {posts.map((post) => (
+            {filteredPosts.map((post) => (
               <article 
                 key={post.id} 
                 className="p-8 border-r border-b border-[#1A1A1A] hover:bg-white transition-colors cursor-pointer group flex flex-col justify-between h-full min-h-[320px]"
               >
                 <Link href={`/blog/${post.slug}`} className="contents">
                   <div>
-                    <div className="flex items-center gap-3 mb-6">
-                      <span className="text-xs font-bold tracking-widest uppercase">STORY</span>
+                    <div className="flex items-center gap-3 mb-6 flex-wrap">
+                      <span className="text-xs font-bold tracking-widest uppercase">
+                        {post.categories && post.categories.length > 0 ? post.categories[0].name : 'STORY'}
+                      </span>
                       <span className="text-[#777777] text-xs">—</span>
                       <span className="text-[#777777] text-xs font-mono">{formatDate(post.published_at)}</span>
                     </div>
@@ -132,8 +183,13 @@ export default function Home() {
                     </p>
                   </div>
                   
-                  <div className="mt-8 pt-4 border-t border-[#E5E5E5] text-xs font-semibold tracking-wide uppercase text-[#1A1A1A]">
-                    By {post.author_name}
+                  <div className="mt-8 pt-4 border-t border-[#E5E5E5] text-xs font-semibold tracking-wide uppercase text-[#1A1A1A] flex justify-between items-center">
+                    <span>By {post.author_name}</span>
+                    {post.tags && post.tags.length > 0 && (
+                      <span className="text-[#777777] font-normal hidden sm:inline-block truncate max-w-[120px]">
+                        #{post.tags[0].name}
+                      </span>
+                    )}
                   </div>
                 </Link>
               </article>
