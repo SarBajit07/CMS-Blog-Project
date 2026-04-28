@@ -117,6 +117,14 @@ router.get('/:slug', postController.getPost);
  *               status:
  *                 type: string
  *                 enum: [draft, published]
+ *               categoryIds:
+ *                 type: array
+ *                 items:
+ *                   type: integer
+ *               tagIds:
+ *                 type: array
+ *                 items:
+ *                   type: integer
  *     responses:
  *       201:
  *         description: Post created
@@ -156,6 +164,14 @@ router.post('/', protect, validate(postValidation), postController.createPost);
  *               status:
  *                 type: string
  *                 enum: [draft, published]
+ *               categoryIds:
+ *                 type: array
+ *                 items:
+ *                   type: integer
+ *               tagIds:
+ *                 type: array
+ *                 items:
+ *                   type: integer
  *     responses:
  *       200:
  *         description: Post updated

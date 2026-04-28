@@ -53,6 +53,47 @@ const options = {
             published_at: { type: 'string', format: 'date-time', nullable: true },
             created_at: { type: 'string', format: 'date-time' },
             updated_at: { type: 'string', format: 'date-time' },
+            categories: { 
+              type: 'array', 
+              items: {
+                type: 'object',
+                properties: {
+                  id: { type: 'integer' },
+                  name: { type: 'string' },
+                  slug: { type: 'string' }
+                }
+              }
+            },
+            tags: { 
+              type: 'array', 
+              items: {
+                type: 'object',
+                properties: {
+                  id: { type: 'integer' },
+                  name: { type: 'string' },
+                  slug: { type: 'string' }
+                }
+              }
+            },
+          },
+        },
+        Category: {
+          type: 'object',
+          properties: {
+            id: { type: 'integer' },
+            name: { type: 'string' },
+            slug: { type: 'string' },
+            description: { type: 'string', nullable: true },
+            updated_at: { type: 'string', format: 'date-time' },
+          },
+        },
+        Tag: {
+          type: 'object',
+          properties: {
+            id: { type: 'integer' },
+            name: { type: 'string' },
+            slug: { type: 'string' },
+            updated_at: { type: 'string', format: 'date-time' },
           },
         },
         Error: {
