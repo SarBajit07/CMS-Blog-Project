@@ -10,8 +10,8 @@ const { protect, authorize } = require('../middlewares/authMiddleware');
  *   description: User management endpoints (Admin only)
  */
 
-// All user routes require admin role
-router.use(protect, authorize('admin'));
+// All user routes require superadmin role
+router.use(protect, authorize('superadmin'));
 
 /**
  * @swagger

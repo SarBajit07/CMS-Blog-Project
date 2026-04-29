@@ -55,8 +55,8 @@ router.get('/', tagController.getTags);
  */
 router.get('/:slug', tagController.getTag);
 
-// Protected admin routes
-router.use(protect, authorize('admin', 'superadmin'));
+// Protected superadmin routes
+router.use(protect, authorize('superadmin'));
 
 /**
  * @swagger

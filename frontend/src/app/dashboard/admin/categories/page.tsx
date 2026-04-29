@@ -7,36 +7,37 @@ import { apiFetch } from '@/lib/api';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import { useAuth } from '@/context/AuthContext';
 
-interface Tag {
+interface Category {
   id: number;
   name: string;
   slug: string;
+  description: string;
 }
 
-function TagsManagementPage() {
+function CategoriesManagementPage() {
   const { user } = useAuth();
-  const [tags, setTags] = useState<Tag[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   
   // Form state
   const [isAdding, setIsAdding] = useState(false);
   const [editingId, setEditingId] = useState<number | null>(null);
-  const [formData, setFormData] = useState({ name: '' });
+  const [formData, setFormData] = useState({ name: '', description: '' });
   const [isSubmitting, setIsSubmitting] = useState(false);
 
   useEffect(() => {
-    fetchTags();
+    fetchCategories();
   }, []);
 
-  const fetchTags = async () => {
+  const fetchCategories = async () => {
     setLoading(true);
     try {
-      const response = await apiFetch('/tags');
+      const response = await apiFetch('/categories');
       if (response.success) {
-        setTags(response.data.tags);
+        setCategories(response.data.categories);
       } else {
-        setError(response.message || 'Failed to load tags');
+        setError(response.message || 'Failed to load categories');
       }
     } catch (err: any) {
       setError(err.message || 'An error occurred');
@@ -49,16 +50,16 @@ function TagsManagementPage() {
     e.preventDefault();
     setIsSubmitting(true);
     try {
-      const response = await apiFetch('/tags', {
+      const response = await apiFetch('/categories', {
         method: 'POST',
         body: JSON.stringify(formData),
       });
       if (response.success) {
-        setTags([...tags, response.data.tag]);
+        setCategories([...categories, response.data.category]);
         setIsAdding(false);
-        setFormData({ name: '' });
+        setFormData({ name: '', description: '' });
       } else {
-        alert(response.message || 'Failed to create tag');
+        alert(response.message || 'Failed to create category');
       }
     } catch (err: any) {
       alert(err.message || 'An error occurred');
@@ -72,16 +73,16 @@ function TagsManagementPage() {
     if (!editingId) return;
     setIsSubmitting(true);
     try {
-      const response = await apiFetch(`/tags/${editingId}`, {
+      const response = await apiFetch(`/categories/${editingId}`, {
         method: 'PUT',
         body: JSON.stringify(formData),
       });
       if (response.success) {
-        setTags(tags.map(t => t.id === editingId ? response.data.tag : t));
+        setCategories(categories.map(c => c.id === editingId ? response.data.category : c));
         setEditingId(null);
-        setFormData({ name: '' });
+        setFormData({ name: '', description: '' });
       } else {
-        alert(response.message || 'Failed to update tag');
+        alert(response.message || 'Failed to update category');
       }
     } catch (err: any) {
       alert(err.message || 'An error occurred');
@@ -91,34 +92,34 @@ function TagsManagementPage() {
   };
 
   const handleDelete = async (id: number) => {
-    if (!window.confirm("Are you sure? This will remove the tag from all associated posts.")) return;
+    if (!window.confirm("Are you sure? This will remove the category from all associated posts.")) return;
     try {
-      const response = await apiFetch(`/tags/${id}`, {
+      const response = await apiFetch(`/categories/${id}`, {
         method: 'DELETE',
       });
       if (response.success) {
-        setTags(tags.filter(t => t.id !== id));
+        setCategories(categories.filter(c => c.id !== id));
       } else {
-        alert(response.message || 'Failed to delete tag');
+        alert(response.message || 'Failed to delete category');
       }
     } catch (err: any) {
       alert(err.message || 'An error occurred');
     }
   };
 
-  const startEdit = (tag: Tag) => {
-    setEditingId(tag.id);
-    setFormData({ name: tag.name });
+  const startEdit = (category: Category) => {
+    setEditingId(category.id);
+    setFormData({ name: category.name, description: category.description || '' });
     setIsAdding(false);
   };
 
   const cancelAction = () => {
     setIsAdding(false);
     setEditingId(null);
-    setFormData({ name: '' });
+    setFormData({ name: '', description: '' });
   };
 
-  if (user?.role !== 'admin' && user?.role !== 'superadmin') {
+  if (user?.role !== 'superadmin') {
     return (
       <div className="min-h-screen flex items-center justify-center bg-[#FAFAFA] p-6 text-center">
         <div className="max-w-md">
@@ -134,7 +135,7 @@ function TagsManagementPage() {
 
   return (
     <div className="min-h-screen bg-[#FAFAFA] text-[#1A1A1A] p-8 md:p-16">
-      <div className="max-w-4xl mx-auto">
+      <div className="max-w-5xl mx-auto">
         <Link href="/dashboard" className="inline-flex items-center gap-2 text-xs font-bold tracking-widest uppercase mb-12 hover:text-[#777777] transition-colors">
           <ArrowLeft size={14} /> Back to Workspace
         </Link>
@@ -145,7 +146,7 @@ function TagsManagementPage() {
               Taxonomy Management
             </span>
             <h1 className="font-display text-5xl md:text-6xl">
-              Tags.
+              Categories.
             </h1>
           </div>
           {!isAdding && !editingId && (
@@ -153,7 +154,7 @@ function TagsManagementPage() {
               onClick={() => setIsAdding(true)}
               className="inline-flex items-center gap-2 px-8 py-4 bg-[#1A1A1A] text-white text-xs font-bold tracking-widest uppercase hover:bg-[#474747] transition-colors"
             >
-              <Plus size={14} /> Add Tag
+              <Plus size={14} /> Add Category
             </button>
           )}
         </header>
@@ -161,18 +162,28 @@ function TagsManagementPage() {
         {(isAdding || editingId) && (
           <section className="mb-16 border border-[#1A1A1A] bg-white p-8 animate-fade-in">
             <h2 className="font-display text-2xl mb-8 border-b border-[#E5E5E5] pb-4">
-              {isAdding ? 'Establish New Tag' : 'Modify Existing Tag'}
+              {isAdding ? 'Establish New Category' : 'Modify Existing Category'}
             </h2>
             <form onSubmit={editingId ? handleUpdate : handleCreate} className="space-y-6">
               <div>
-                <label className="block text-[10px] font-bold tracking-widest uppercase text-[#1A1A1A] mb-2">Tag Name</label>
+                <label className="block text-[10px] font-bold tracking-widest uppercase text-[#1A1A1A] mb-2">Category Name</label>
                 <input 
                   type="text" 
                   required
-                  placeholder="e.g., lifestyle, minimal, tech..."
+                  placeholder="e.g., Editorial, Politics, Culture..."
                   className="w-full bg-[#FAFAFA] border border-[#1A1A1A] px-4 py-3 text-sm outline-none focus:ring-1 focus:ring-[#1A1A1A] transition-all"
                   value={formData.name}
                   onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                />
+              </div>
+              <div>
+                <label className="block text-[10px] font-bold tracking-widest uppercase text-[#1A1A1A] mb-2">Description (Optional)</label>
+                <textarea 
+                  rows={3}
+                  placeholder="Brief context for this category..."
+                  className="w-full bg-[#FAFAFA] border border-[#1A1A1A] px-4 py-3 text-sm outline-none focus:ring-1 focus:ring-[#1A1A1A] transition-all resize-none"
+                  value={formData.description}
+                  onChange={(e) => setFormData({ ...formData, description: e.target.value })}
                 />
               </div>
               <div className="flex gap-4 pt-4">
@@ -182,7 +193,7 @@ function TagsManagementPage() {
                   className="px-8 py-3 bg-[#1A1A1A] text-white text-[10px] font-bold tracking-widest uppercase hover:bg-[#474747] transition-colors flex items-center gap-2 disabled:opacity-50"
                 >
                   {isSubmitting ? <Loader2 size={14} className="animate-spin" /> : <Check size={14} />}
-                  {editingId ? 'Confirm Changes' : 'Create Tag'}
+                  {editingId ? 'Confirm Changes' : 'Create Category'}
                 </button>
                 <button 
                   type="button" 
@@ -199,38 +210,44 @@ function TagsManagementPage() {
         {loading ? (
           <div className="flex flex-col items-center justify-center py-24 bg-white border border-[#1A1A1A]">
             <Loader2 className="animate-spin mb-4" size={24} />
-            <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-[#777777]">Indexing Keywords</p>
+            <p className="text-[10px] font-bold tracking-[0.2em] uppercase text-[#777777]">Indexing Collections</p>
           </div>
         ) : error ? (
           <div className="p-8 border border-[#E05555] bg-[#FEF2F2] text-[#E05555] text-center">
             {error}
           </div>
-        ) : tags.length === 0 ? (
+        ) : categories.length === 0 ? (
           <div className="p-24 bg-white border border-[#1A1A1A] text-center">
-            <p className="text-[#777777] italic">No tags have been established yet.</p>
+            <p className="text-[#777777] italic">No categories have been established yet.</p>
           </div>
         ) : (
           <div className="bg-white border border-[#1A1A1A]">
             <div className="grid grid-cols-12 gap-4 p-4 border-b border-[#1A1A1A] bg-[#F9FAFB] text-[10px] font-bold tracking-[0.2em] uppercase text-[#777777] hidden md:grid">
-              <div className="col-span-4">Name / Slug</div>
-              <div className="col-span-8 text-right">Actions</div>
+              <div className="col-span-3">Name / Slug</div>
+              <div className="col-span-6">Description</div>
+              <div className="col-span-3 text-right">Actions</div>
             </div>
             <div className="divide-y divide-[#E5E5E5]">
-              {tags.map((tag) => (
-                <div key={tag.id} className="grid grid-cols-1 md:grid-cols-12 gap-4 p-6 items-center hover:bg-[#F9FAFB] transition-colors group">
-                  <div className="col-span-1 md:col-span-4">
-                    <h3 className="font-bold text-sm tracking-tight">{tag.name}</h3>
-                    <p className="text-[10px] font-mono text-[#777777]">#{tag.slug}</p>
+              {categories.map((category) => (
+                <div key={category.id} className="grid grid-cols-1 md:grid-cols-12 gap-4 p-6 items-center hover:bg-[#F9FAFB] transition-colors group">
+                  <div className="col-span-1 md:col-span-3">
+                    <h3 className="font-bold text-sm tracking-tight">{category.name}</h3>
+                    <p className="text-[10px] font-mono text-[#777777]">/{category.slug}</p>
                   </div>
-                  <div className="col-span-1 md:col-span-8 flex items-center md:justify-end gap-6">
+                  <div className="col-span-1 md:col-span-6">
+                    <p className="text-xs text-[#474747] font-light italic">
+                      {category.description || 'No description provided.'}
+                    </p>
+                  </div>
+                  <div className="col-span-1 md:col-span-3 flex items-center md:justify-end gap-6">
                     <button 
-                      onClick={() => startEdit(tag)}
+                      onClick={() => startEdit(category)}
                       className="text-[10px] font-bold tracking-widest uppercase hover:text-[#777777] flex items-center gap-1"
                     >
                       <Edit2 size={12} /> Edit
                     </button>
                     <button 
-                      onClick={() => handleDelete(tag.id)}
+                      onClick={() => handleDelete(category.id)}
                       className="text-[10px] font-bold tracking-widest uppercase text-[#E05555] hover:text-[#B91C1C] flex items-center gap-1"
                     >
                       <Trash2 size={12} /> Delete
@@ -246,10 +263,10 @@ function TagsManagementPage() {
   );
 }
 
-export default function TagsManagement() {
+export default function CategoriesManagement() {
   return (
     <ProtectedRoute>
-      <TagsManagementPage />
+      <CategoriesManagementPage />
     </ProtectedRoute>
   );
 }

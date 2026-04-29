@@ -19,9 +19,9 @@ const updateUserRole = async (req, res, next) => {
     const { id } = req.params;
     const { role } = req.body;
 
-    const validRoles = ['author', 'admin'];
+    const validRoles = ['author', 'admin', 'superadmin'];
     if (!validRoles.includes(role)) {
-      return response.error(res, 400, 'Invalid role. Must be "author" or "admin"');
+      return response.error(res, 400, 'Invalid role. Must be "author", "admin", or "superadmin"');
     }
 
     const updatedUser = await UserModel.updateRole(id, role);

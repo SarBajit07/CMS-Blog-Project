@@ -55,8 +55,8 @@ router.get('/', categoryController.getCategories);
  */
 router.get('/:slug', categoryController.getCategory);
 
-// Protected admin routes
-router.use(protect, authorize('admin', 'superadmin')); // Using authorize for admin/superadmin
+// Protected superadmin routes
+router.use(protect, authorize('superadmin')); // Using authorize for superadmin
 
 /**
  * @swagger
