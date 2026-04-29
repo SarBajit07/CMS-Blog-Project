@@ -40,9 +40,10 @@ export async function apiFetch(endpoint: string, options: FetchOptions = {}): Pr
     url += `?${searchParams.toString()}`;
   }
 
-  const defaultHeaders: Record<string, string> = {
-    'Content-Type': 'application/json',
-  };
+  const defaultHeaders: Record<string, string> = {};
+  if (!(rest.body instanceof FormData)) {
+    defaultHeaders['Content-Type'] = 'application/json';
+  }
 
   if (currentAccessToken) {
     defaultHeaders['Authorization'] = `Bearer ${currentAccessToken}`;

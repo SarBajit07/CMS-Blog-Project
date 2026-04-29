@@ -21,8 +21,10 @@ import {
   Heading2,
   AlignLeft,
   AlignCenter,
-  AlignRight
+  AlignRight,
+  Image as ImageIcon
 } from 'lucide-react';
+import Image from '@tiptap/extension-image';
 
 interface RichTextEditorProps {
   value: string;
@@ -153,6 +155,38 @@ const MenuBar = ({ editor }: { editor: any }) => {
         <LinkIcon size={16} />
       </button>
 
+      <button
+        type="button"
+        onClick={async () => {
+          const input = document.createElement('input');
+          input.type = 'file';
+          input.accept = 'image/*,video/*';
+          input.onchange = async () => {
+            if (input.files && input.files[0]) {
+              const file = input.files[0];
+              const formData = new FormData();
+              formData.append('file', file);
+              try {
+                // We'll import apiFetch at the top of the file in the next replace
+                // or we can pass it down. Better to just import it.
+                const { apiFetch } = require('@/lib/api');
+                const res = await apiFetch('/upload', { method: 'POST', body: formData });
+                if (res.success) {
+                  editor.chain().focus().setImage({ src: res.data.url }).run();
+                }
+              } catch (err) {
+                alert('Upload failed');
+              }
+            }
+          };
+          input.click();
+        }}
+        className="p-2 hover:bg-gray-200 transition-colors text-[#777777]"
+        title="Upload Image/Video"
+      >
+        <ImageIcon size={16} />
+      </button>
+
       <div className="ml-auto flex gap-1">
         <button
           type="button"
@@ -197,6 +231,12 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
       }),
       Placeholder.configure({
         placeholder: placeholder || 'Start writing your story...',
+      }),
+      Image.configure({
+        inline: true,
+        HTMLAttributes: {
+          class: 'max-w-full h-auto my-4',
+        },
       }),
     ],
     content: value,

@@ -14,6 +14,7 @@ const postRoutes = require('./routes/postRoutes');
 const categoryRoutes = require('./routes/categoryRoutes');
 const tagRoutes = require('./routes/tagRoutes');
 const commentRoutes = require('./routes/commentRoutes');
+const uploadRoutes = require('./routes/uploadRoutes');
 
 // Middleware imports
 const { errorHandler, notFound } = require('./middlewares/errorMiddleware');
@@ -40,6 +41,7 @@ app.use('/api/posts', postRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/tags', tagRoutes);
 app.use('/api/comments', commentRoutes);
+app.use('/api/upload', uploadRoutes);
 
 // Health check
 app.get('/', (req, res) => {

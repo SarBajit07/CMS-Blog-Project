@@ -213,15 +213,51 @@ function EditPostPage() {
           {/* Cover Image URL */}
           <div>
             <label htmlFor="cover_image_url" className="block text-xs font-bold tracking-widest uppercase text-[#1A1A1A] mb-2">
-              Cover Image URL
+              Cover Image
             </label>
-            <input
-              id="cover_image_url"
-              type="text"
-              placeholder="https://example.com/image.jpg"
-              className={`w-full bg-white border ${errors.cover_image_url ? 'border-[#E05555]' : 'border-[#1A1A1A]'} text-[#1A1A1A] px-4 py-3 text-sm font-light placeholder:text-[#A3A3A3] outline-none focus:ring-1 focus:ring-[#1A1A1A] transition-all`}
-              {...register('cover_image_url')}
-            />
+            <div className="flex flex-col md:flex-row gap-4 items-start md:items-center">
+              <input
+                id="cover_image_url"
+                type="text"
+                placeholder="https://example.com/image.jpg"
+                className={`flex-1 w-full bg-white border ${errors.cover_image_url ? 'border-[#E05555]' : 'border-[#1A1A1A]'} text-[#1A1A1A] px-4 py-3 text-sm font-light placeholder:text-[#A3A3A3] outline-none focus:ring-1 focus:ring-[#1A1A1A] transition-all`}
+                {...register('cover_image_url')}
+              />
+              <button
+                type="button"
+                className="px-6 py-3 bg-[#1A1A1A] text-white text-[10px] font-bold tracking-widest uppercase hover:bg-[#474747] transition-colors whitespace-nowrap h-[46px]"
+                onClick={() => {
+                  const input = document.createElement('input');
+                  input.type = 'file';
+                  input.accept = 'image/*';
+                  input.onchange = async () => {
+                    if (input.files && input.files[0]) {
+                      const file = input.files[0];
+                      const formData = new FormData();
+                      formData.append('file', file);
+                      try {
+                        const res = await apiFetch('/upload', { method: 'POST', body: formData });
+                        if (res.success) {
+                          setValue('cover_image_url', res.data.url, { shouldValidate: true });
+                        } else {
+                          alert(res.message || 'Upload failed');
+                        }
+                      } catch (err) {
+                        alert('Upload failed');
+                      }
+                    }
+                  };
+                  input.click();
+                }}
+              >
+                Upload File
+              </button>
+            </div>
+            {watch('cover_image_url') && (
+              <div className="mt-4 border border-[#1A1A1A] p-2 inline-block">
+                <img src={watch('cover_image_url')} alt="Cover Preview" className="h-32 object-cover" />
+              </div>
+            )}
             {errors.cover_image_url && <p className="mt-2 text-xs text-[#E05555]">{errors.cover_image_url.message}</p>}
           </div>
 
