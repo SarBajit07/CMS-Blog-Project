@@ -13,6 +13,7 @@ const userRoutes = require('./routes/userRoutes');
 const postRoutes = require('./routes/postRoutes');
 const categoryRoutes = require('./routes/categoryRoutes');
 const tagRoutes = require('./routes/tagRoutes');
+const commentRoutes = require('./routes/commentRoutes');
 
 // Middleware imports
 const { errorHandler, notFound } = require('./middlewares/errorMiddleware');
@@ -38,6 +39,7 @@ app.use('/api/users', userRoutes);
 app.use('/api/posts', postRoutes);
 app.use('/api/categories', categoryRoutes);
 app.use('/api/tags', tagRoutes);
+app.use('/api/comments', commentRoutes);
 
 // Health check
 app.get('/', (req, res) => {

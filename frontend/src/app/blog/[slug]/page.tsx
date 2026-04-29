@@ -5,6 +5,7 @@ import Link from 'next/link';
 import { useParams } from 'next/navigation';
 import { ArrowLeft, Clock, User, Loader2 } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
+import CommentsSection from '@/components/CommentsSection';
 
 interface Category {
   id: number;
@@ -176,6 +177,9 @@ export default function PostDetailPage() {
             End of Record
           </p>
         </footer>
+
+        {/* Comments System */}
+        {post && <CommentsSection postId={post.id} />}
 
       </article>
     </div>
