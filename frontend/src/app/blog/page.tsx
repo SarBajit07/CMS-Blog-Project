@@ -5,6 +5,12 @@ import Link from 'next/link';
 import { ArrowLeft, Loader2, Search } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
 
+interface Category {
+  id: number;
+  name: string;
+  slug: string;
+}
+
 interface Post {
   id: number;
   title: string;
@@ -12,22 +18,33 @@ interface Post {
   excerpt: string;
   author_name: string;
   published_at: string;
+  categories?: Category[];
 }
 
 export default function BlogArchivePage() {
   const [posts, setPosts] = useState<Post[]>([]);
+  const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
   const [error, setError] = useState<string | null>(null);
   const [searchTerm, setSearchTerm] = useState('');
+  const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
 
   useEffect(() => {
-    const fetchPosts = async () => {
+    const fetchData = async () => {
       try {
-        const response = await apiFetch('/posts');
-        if (response.success) {
-          setPosts(response.data.posts);
+        const [postsRes, catsRes] = await Promise.all([
+          apiFetch('/posts'),
+          apiFetch('/categories')
+        ]);
+
+        if (postsRes.success) {
+          setPosts(postsRes.data.posts);
         } else {
-          setError(response.message || 'Failed to load archive');
+          setError(postsRes.message || 'Failed to load archive');
+        }
+
+        if (catsRes.success) {
+          setCategories(catsRes.data.categories);
         }
       } catch (err: any) {
         setError(err.message || 'An error occurred');
@@ -36,7 +53,7 @@ export default function BlogArchivePage() {
       }
     };
 
-    fetchPosts();
+    fetchData();
   }, []);
 
   const formatDate = (dateString: string) => {
@@ -49,10 +66,15 @@ export default function BlogArchivePage() {
     }).toUpperCase();
   };
 
-  const filteredPosts = posts.filter(post => 
-    post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-    post.author_name.toLowerCase().includes(searchTerm.toLowerCase())
-  );
+  const filteredPosts = posts.filter(post => {
+    const matchesSearch = post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
+                         post.author_name.toLowerCase().includes(searchTerm.toLowerCase());
+    
+    const matchesCategory = !selectedCategory || 
+                           post.categories?.some(cat => cat.slug === selectedCategory);
+    
+    return matchesSearch && matchesCategory;
+  });
 
   return (
     <div className="min-h-screen bg-[#FAFAFA] text-[#1A1A1A]">
@@ -69,18 +91,40 @@ export default function BlogArchivePage() {
           </p>
         </header>
 
-        {/* Search & Filter */}
-        <div className="mb-12 relative max-w-md">
-          <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-[#777777]">
-            <Search size={16} />
+        {/* Search & Filter Bar */}
+        <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 mb-12">
+          {/* Search */}
+          <div className="relative flex-1 max-w-md">
+            <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-[#777777]">
+              <Search size={16} />
+            </div>
+            <input 
+              type="text" 
+              placeholder="SEARCH THE ARCHIVE..."
+              className="w-full pl-12 pr-4 py-3 bg-white border border-[#1A1A1A] text-xs font-bold tracking-widest uppercase outline-none focus:ring-1 focus:ring-[#1A1A1A] transition-all"
+              value={searchTerm}
+              onChange={(e) => setSearchTerm(e.target.value)}
+            />
           </div>
-          <input 
-            type="text" 
-            placeholder="SEARCH THE ARCHIVE..."
-            className="w-full pl-12 pr-4 py-3 bg-white border border-[#1A1A1A] text-xs font-bold tracking-widest uppercase outline-none focus:ring-1 focus:ring-[#1A1A1A] transition-all"
-            value={searchTerm}
-            onChange={(e) => setSearchTerm(e.target.value)}
-          />
+
+          {/* Category Filter */}
+          <div className="flex flex-wrap items-center gap-3">
+            <button
+              onClick={() => setSelectedCategory(null)}
+              className={`px-4 py-2 text-[10px] font-bold tracking-widest uppercase border transition-all ${!selectedCategory ? 'bg-[#1A1A1A] text-white border-[#1A1A1A]' : 'bg-transparent text-[#777777] border-[#E5E5E5] hover:border-[#1A1A1A] hover:text-[#1A1A1A]'}`}
+            >
+              All Editions
+            </button>
+            {categories.map(cat => (
+              <button
+                key={cat.id}
+                onClick={() => setSelectedCategory(cat.slug)}
+                className={`px-4 py-2 text-[10px] font-bold tracking-widest uppercase border transition-all ${selectedCategory === cat.slug ? 'bg-[#1A1A1A] text-white border-[#1A1A1A]' : 'bg-transparent text-[#777777] border-[#E5E5E5] hover:border-[#1A1A1A] hover:text-[#1A1A1A]'}`}
+              >
+                {cat.name}
+              </button>
+            ))}
+          </div>
         </div>
 
         {loading ? (
@@ -94,7 +138,7 @@ export default function BlogArchivePage() {
           </div>
         ) : filteredPosts.length === 0 ? (
           <div className="p-24 border border-[#1A1A1A] bg-white text-center">
-            <p className="text-[#474747] italic">No records found matching your search.</p>
+            <p className="text-[#474747] italic">No records found matching your selection.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 gap-12">
@@ -104,7 +148,11 @@ export default function BlogArchivePage() {
                   <div className="flex-1">
                     <div className="flex items-center gap-4 mb-4">
                       <span className="text-[10px] font-mono text-[#777777]">{formatDate(post.published_at)}</span>
-                      <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#1A1A1A]">Article</span>
+                      {post.categories && post.categories.length > 0 && (
+                        <span className="text-[10px] font-bold uppercase tracking-[0.2em] text-[#1A1A1A]">
+                          {post.categories[0].name}
+                        </span>
+                      )}
                     </div>
                     <Link href={`/blog/${post.slug}`}>
                       <h2 className="font-display text-3xl md:text-4xl mb-4 group-hover:underline decoration-1 underline-offset-8 transition-all">
