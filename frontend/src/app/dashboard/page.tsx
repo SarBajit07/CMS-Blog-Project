@@ -98,7 +98,7 @@ function DashboardPage() {
           </Link>
         </header>
 
-        {/* Stats Row */}
+        {/* Stats & Management Row */}
         <div className="grid grid-cols-2 md:grid-cols-4 gap-0 border-t border-l border-[#1A1A1A] mb-16">
           <div className="p-6 border-r border-b border-[#1A1A1A] bg-white">
             <span className="text-[10px] font-bold tracking-[0.2em] uppercase text-[#777777] block mb-2">Total Stories</span>
@@ -108,14 +108,37 @@ function DashboardPage() {
             <span className="text-[10px] font-bold tracking-[0.2em] uppercase text-[#777777] block mb-2">Published</span>
             <span className="font-display text-4xl">{publishedCount}</span>
           </div>
-          <div className="p-6 border-r border-b border-[#1A1A1A] bg-white">
-            <span className="text-[10px] font-bold tracking-[0.2em] uppercase text-[#777777] block mb-2">Drafts</span>
-            <span className="font-display text-4xl">{draftCount}</span>
-          </div>
-          <div className="p-6 border-r border-b border-[#1A1A1A] bg-white">
-            <span className="text-[10px] font-bold tracking-[0.2em] uppercase text-[#777777] block mb-2">Role</span>
-            <span className="font-display text-2xl uppercase tracking-widest mt-2 block">{user?.role}</span>
-          </div>
+          
+          {(user?.role === 'admin' || user?.role === 'superadmin') ? (
+            <div className="p-6 border-r border-b border-[#1A1A1A] bg-[#F9FAFB] col-span-2 md:col-span-2 flex flex-col justify-between">
+              <span className="text-[10px] font-bold tracking-[0.2em] uppercase text-[#777777] block mb-4">Taxonomy Management</span>
+              <div className="flex gap-6">
+                <Link 
+                  href="/dashboard/categories"
+                  className="text-xs font-bold tracking-widest uppercase border-b border-[#1A1A1A] pb-1 hover:text-[#777777] transition-colors"
+                >
+                  Categories
+                </Link>
+                <Link 
+                  href="/dashboard/tags"
+                  className="text-xs font-bold tracking-widest uppercase border-b border-[#1A1A1A] pb-1 hover:text-[#777777] transition-colors"
+                >
+                  Tags
+                </Link>
+              </div>
+            </div>
+          ) : (
+            <>
+              <div className="p-6 border-r border-b border-[#1A1A1A] bg-white">
+                <span className="text-[10px] font-bold tracking-[0.2em] uppercase text-[#777777] block mb-2">Drafts</span>
+                <span className="font-display text-4xl">{draftCount}</span>
+              </div>
+              <div className="p-6 border-r border-b border-[#1A1A1A] bg-white">
+                <span className="text-[10px] font-bold tracking-[0.2em] uppercase text-[#777777] block mb-2">Role</span>
+                <span className="font-display text-2xl uppercase tracking-widest mt-2 block">{user?.role}</span>
+              </div>
+            </>
+          )}
         </div>
 
         {/* Posts List Section */}
