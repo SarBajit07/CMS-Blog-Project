@@ -4,6 +4,9 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ArrowRight, Loader2 } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
+import PostSkeleton from '@/components/PostSkeleton';
+
+import { toast } from 'sonner';
 
 interface Post {
   id: number;
@@ -13,6 +16,7 @@ interface Post {
   author_name: string;
   published_at: string;
   status: string;
+  cover_image_url?: string;
   categories?: { id: number; name: string; slug: string }[];
   tags?: { id: number; name: string; slug: string }[];
 }
@@ -28,34 +32,62 @@ export default function Home() {
   const [categories, setCategories] = useState<Category[]>([]);
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
+  
+  // Pagination state
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [postsResponse, categoriesResponse] = await Promise.all([
-          apiFetch('/posts'),
-          apiFetch('/categories')
-        ]);
-        
-        if (postsResponse.success) {
-          setPosts(postsResponse.data.posts);
-        } else {
-          setError(postsResponse.message || 'Failed to fetch posts');
-        }
-
-        if (categoriesResponse.success) {
-          setCategories(categoriesResponse.data.categories);
-        }
-      } catch (err: any) {
-        setError(err.message || 'An error occurred while fetching data');
-      } finally {
-        setLoading(false);
-      }
-    };
-
-    fetchData();
+    fetchInitialData();
   }, []);
+
+  const fetchInitialData = async () => {
+    setLoading(true);
+    try {
+      const [postsResponse, categoriesResponse] = await Promise.all([
+        apiFetch('/posts', { params: { page: '1', limit: '10' } }),
+        apiFetch('/categories')
+      ]);
+      
+      if (postsResponse.success) {
+        setPosts(postsResponse.data.posts);
+        setHasMore(postsResponse.data.pagination.page < postsResponse.data.pagination.totalPages);
+      } else {
+        setError(postsResponse.message || 'Failed to fetch posts');
+        toast.error(postsResponse.message || 'Failed to fetch posts');
+      }
+
+      if (categoriesResponse.success) {
+        setCategories(categoriesResponse.data.categories);
+      }
+    } catch (err: any) {
+      setError(err.message || 'An error occurred while fetching data');
+      toast.error(err.message || 'Connection error');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLoadMore = async () => {
+    if (loadingMore || !hasMore) return;
+    setLoadingMore(true);
+    const nextPage = page + 1;
+    try {
+      const response = await apiFetch('/posts', { params: { page: nextPage.toString(), limit: '9' } });
+      if (response.success) {
+        setPosts([...posts, ...response.data.posts]);
+        setPage(nextPage);
+        setHasMore(response.data.pagination.page < response.data.pagination.totalPages);
+      }
+    } catch (err) {
+      console.error('Failed to load more posts', err);
+      toast.error('Failed to load more records');
+    } finally {
+      setLoadingMore(false);
+    }
+  };
 
   const formatDate = (dateString: string) => {
     if (!dateString) return 'DRAFT';
@@ -70,6 +102,9 @@ export default function Home() {
   const filteredPosts = selectedCategory 
     ? posts.filter(post => post.categories?.some(cat => cat.slug === selectedCategory))
     : posts;
+
+  const featuredPost = !selectedCategory && filteredPosts.length > 0 ? filteredPosts[0] : null;
+  const regularPosts = featuredPost ? filteredPosts.slice(1) : filteredPosts;
 
   return (
     <div className="min-h-screen bg-[#FAFAFA] text-[#1A1A1A] font-sans selection:bg-[#1A1A1A] selection:text-white">
@@ -103,10 +138,56 @@ export default function Home() {
         </div>
       </header>
 
+      {/* ── Featured Post ───────────────────────────────────────────── */}
+      {!loading && featuredPost && !selectedCategory && (
+        <section className="max-w-6xl mx-auto px-6 lg:px-8 py-12 border-b border-[#1A1A1A]">
+          <Link href={`/blog/${featuredPost.slug}`} className="group grid grid-cols-1 md:grid-cols-2 gap-12 items-center">
+            <div className={featuredPost.cover_image_url ? "" : "bg-[#1A1A1A] aspect-[16/10] flex items-center justify-center p-12 order-2 md:order-1"}>
+              {featuredPost.cover_image_url ? (
+                <div className="aspect-[16/10] overflow-hidden border border-[#1A1A1A]">
+                  <img 
+                    src={featuredPost.cover_image_url} 
+                    alt={featuredPost.title}
+                    className="w-full h-full object-cover grayscale group-hover:grayscale-0 transition-all duration-700 ease-in-out scale-100 group-hover:scale-105"
+                  />
+                </div>
+              ) : (
+                <div className="text-white text-center">
+                  <span className="text-[10px] font-bold tracking-[0.3em] uppercase opacity-50 mb-4 block">Editorial Feature</span>
+                  <h2 className="font-display text-4xl leading-tight italic">{featuredPost.title}</h2>
+                </div>
+              )}
+            </div>
+            <div className="order-1 md:order-2">
+              <div className="flex items-center gap-4 mb-6">
+                <span className="px-2 py-1 bg-[#1A1A1A] text-white text-[9px] font-bold tracking-[0.2em] uppercase">
+                  Featured Edition
+                </span>
+                <span className="text-[10px] font-mono text-[#777777]">{formatDate(featuredPost.published_at)}</span>
+              </div>
+              <h2 className="font-display text-4xl md:text-6xl leading-tight mb-6 group-hover:underline decoration-1 underline-offset-8 transition-all">
+                {featuredPost.title}
+              </h2>
+              <p className="text-[#474747] text-lg font-light leading-relaxed mb-8 line-clamp-3">
+                {featuredPost.excerpt || (featuredPost.body ? featuredPost.body.replace(/<[^>]*>/g, '').substring(0, 200) + '...' : '')}
+              </p>
+              <div className="flex items-center justify-between pt-6 border-t border-[#E5E5E5]">
+                <span className="text-xs font-bold tracking-widest uppercase">By {featuredPost.author_name}</span>
+                <span className="text-xs font-bold tracking-widest uppercase flex items-center gap-2">
+                  Read Story <ArrowRight size={14} />
+                </span>
+              </div>
+            </div>
+          </Link>
+        </section>
+      )}
+
       {/* ── Editorial Grid ─────────────────────────────────────────── */}
       <section className="max-w-6xl mx-auto px-6 lg:px-8 py-24">
         <div className="flex flex-col md:flex-row md:items-center justify-between mb-12 border-b border-[#1A1A1A] pb-4 gap-4">
-          <h2 className="font-display text-3xl">Latest Editions</h2>
+          <h2 className="font-display text-3xl">
+            {selectedCategory ? `${categories.find(c => c.slug === selectedCategory)?.name} Editions` : 'Recent Archives'}
+          </h2>
           
           <div className="flex items-center gap-4 overflow-x-auto pb-2 md:pb-0 scrollbar-hide">
             <button
@@ -140,9 +221,10 @@ export default function Home() {
         </div>
 
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-24 border border-[#1A1A1A] bg-white">
-            <Loader2 className="animate-spin mb-4" size={32} />
-            <p className="text-xs tracking-widest uppercase font-bold">Curating the archive...</p>
+          <div className="grid grid-cols-1 md:grid-cols-3 gap-0 border-t border-l border-[#1A1A1A]">
+            {[...Array(6)].map((_, i) => (
+              <PostSkeleton key={i} />
+            ))}
           </div>
         ) : error ? (
           <div className="p-12 border border-[#1A1A1A] bg-white text-center">
@@ -154,14 +236,14 @@ export default function Home() {
               Retry Connection
             </button>
           </div>
-        ) : filteredPosts.length === 0 ? (
+        ) : regularPosts.length === 0 && !featuredPost ? (
           <div className="p-24 border border-[#1A1A1A] bg-white text-center">
             <h3 className="font-display text-3xl mb-4">No stories found.</h3>
             <p className="text-[#474747] font-light italic">There are no published articles in this category.</p>
           </div>
         ) : (
           <div className="grid grid-cols-1 md:grid-cols-3 gap-0 border-t border-l border-[#1A1A1A]">
-            {filteredPosts.map((post) => (
+            {regularPosts.map((post) => (
               <article 
                 key={post.id} 
                 className="p-8 border-r border-b border-[#1A1A1A] hover:bg-white transition-colors cursor-pointer group flex flex-col justify-between h-full min-h-[320px]"
@@ -179,7 +261,7 @@ export default function Home() {
                       {post.title}
                     </h3>
                     <p className="text-[#474747] text-sm leading-relaxed font-light">
-                      {post.excerpt || (post.body ? post.body.substring(0, 150) + '...' : '')}
+                      {post.excerpt || (post.body ? post.body.replace(/<[^>]*>/g, '').substring(0, 150) + '...' : '')}
                     </p>
                   </div>
                   
@@ -194,6 +276,20 @@ export default function Home() {
                 </Link>
               </article>
             ))}
+          </div>
+        )}
+
+        {/* Load More Button */}
+        {hasMore && !selectedCategory && (
+          <div className="mt-16 flex justify-center">
+            <button
+              onClick={handleLoadMore}
+              disabled={loadingMore}
+              className="px-12 py-4 border border-[#1A1A1A] text-[#1A1A1A] text-xs font-bold tracking-widest uppercase hover:bg-[#1A1A1A] hover:text-white transition-all flex items-center gap-3 disabled:opacity-50"
+            >
+              {loadingMore ? <Loader2 size={16} className="animate-spin" /> : null}
+              {loadingMore ? 'Retrieving More Records' : 'Load More Editions'}
+            </button>
           </div>
         )}
       </section>

@@ -23,6 +23,8 @@ const loginValidation = [
   body('password').notEmpty().withMessage('Password is required'),
 ];
 
+const { protect } = require('../middlewares/authMiddleware');
+
 /**
  * @swagger
  * /api/auth/register:
@@ -109,6 +111,30 @@ router.post('/refresh', authController.refresh);
  *         description: Not authenticated
  */
 router.get('/me', authController.me);
+
+/**
+ * @swagger
+ * /api/auth/me:
+ *   patch:
+ *     summary: Update current user profile
+ *     tags: [Auth]
+ *     security:
+ *       - bearerAuth: []
+ *     requestBody:
+ *       required: true
+ *       content:
+ *         application/json:
+ *           schema:
+ *             type: object
+ *             properties:
+ *               avatarUrl: { type: 'string' }
+ *     responses:
+ *       200:
+ *         description: Profile updated
+ *       401:
+ *         description: Not authenticated
+ */
+router.patch('/me', protect, authController.updateMe);
 
 /**
  * @swagger

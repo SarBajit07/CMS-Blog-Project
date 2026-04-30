@@ -1,7 +1,7 @@
 const db = require('../config/db');
 
-const getAll = async () => {
-  const result = await db.query(`
+const getAll = async (limit = 10, offset = 0) => {
+  const postsQuery = `
     SELECT 
       p.*, 
       u.username AS author_name,
@@ -17,8 +17,22 @@ const getAll = async () => {
     JOIN users u ON p.author_id = u.id
     WHERE p.status = 'published' AND p.deleted_at IS NULL
     ORDER BY p.published_at DESC
-  `);
-  return result.rows;
+    LIMIT $1 OFFSET $2
+  `;
+  
+  const countQuery = `
+    SELECT COUNT(*) FROM posts WHERE status = 'published' AND deleted_at IS NULL
+  `;
+
+  const [postsRes, countRes] = await Promise.all([
+    db.query(postsQuery, [limit, offset]),
+    db.query(countQuery)
+  ]);
+
+  return {
+    posts: postsRes.rows,
+    total: parseInt(countRes.rows[0].count, 10)
+  };
 };
 
 const getBySlug = async (slug) => {
@@ -122,6 +136,46 @@ const setTags = async (postId, tagIds) => {
   }
 };
 
+const search = async (query, limit = 10, offset = 0) => {
+  const postsQuery = `
+    SELECT 
+      p.*, 
+      u.username AS author_name,
+      COALESCE(
+        (SELECT json_agg(json_build_object('id', c.id, 'name', c.name, 'slug', c.slug)) 
+         FROM post_categories pc JOIN categories c ON pc.category_id = c.id WHERE pc.post_id = p.id), 
+      '[]') AS categories,
+      COALESCE(
+        (SELECT json_agg(json_build_object('id', t.id, 'name', t.name, 'slug', t.slug)) 
+         FROM post_tags pt JOIN tags t ON pt.tag_id = t.id WHERE pt.post_id = p.id), 
+      '[]') AS tags
+    FROM posts p
+    JOIN users u ON p.author_id = u.id
+    WHERE p.status = 'published' 
+      AND p.deleted_at IS NULL
+      AND (p.title ILIKE $1 OR p.excerpt ILIKE $1 OR p.body ILIKE $1)
+    ORDER BY p.published_at DESC
+    LIMIT $2 OFFSET $3
+  `;
+
+  const countQuery = `
+    SELECT COUNT(*) FROM posts 
+    WHERE status = 'published' 
+      AND deleted_at IS NULL
+      AND (title ILIKE $1 OR excerpt ILIKE $1 OR body ILIKE $1)
+  `;
+
+  const [postsRes, countRes] = await Promise.all([
+    db.query(postsQuery, [`%${query}%`, limit, offset]),
+    db.query(countQuery, [`%${query}%`])
+  ]);
+
+  return {
+    posts: postsRes.rows,
+    total: parseInt(countRes.rows[0].count, 10)
+  };
+};
+
 module.exports = {
   getAll,
   getBySlug,
@@ -132,4 +186,5 @@ module.exports = {
   getByAuthor,
   setCategories,
   setTags,
+  search,
 };

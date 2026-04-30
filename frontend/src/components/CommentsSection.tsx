@@ -3,6 +3,7 @@
 import { useState, useEffect } from 'react';
 import { useAuth } from '@/context/AuthContext';
 import { apiFetch } from '@/lib/api';
+import { toast } from 'sonner';
 import { Loader2, MessageSquare, Send } from 'lucide-react';
 
 interface Comment {
@@ -54,14 +55,15 @@ export default function CommentsSection({ postId }: { postId: number }) {
         setBody('');
         if (user && (user.role === 'admin' || user.role === 'superadmin')) {
           fetchComments();
+          toast.success('Comment published');
         } else {
-          alert('Comment submitted! It will be visible once approved.');
+          toast.info('Comment submitted! It will be visible once approved.');
         }
       } else {
-        alert(response.message || 'Failed to submit comment');
+        toast.error(response.message || 'Failed to submit comment');
       }
     } catch (err: any) {
-      alert(err.message || 'An error occurred');
+      toast.error(err.message || 'An error occurred');
     } finally {
       setIsSubmitting(false);
     }
@@ -106,8 +108,17 @@ export default function CommentsSection({ postId }: { postId: number }) {
       {/* Comment List */}
       <div>
         {loading ? (
-          <div className="flex justify-center py-8">
-            <Loader2 className="animate-spin text-[#1A1A1A]" size={24} />
+          <div className="space-y-4">
+            {[...Array(3)].map((_, i) => (
+              <div key={i} className="p-6 bg-white border border-[#E5E5E5] animate-pulse">
+                <div className="flex justify-between items-start mb-4">
+                  <div className="h-3 w-20 bg-gray-200" />
+                  <div className="h-2 w-16 bg-gray-100" />
+                </div>
+                <div className="h-3 w-full bg-gray-100 mb-2" />
+                <div className="h-3 w-4/5 bg-gray-100" />
+              </div>
+            ))}
           </div>
         ) : comments.length === 0 ? (
           <p className="text-center text-[#777777] italic py-8">No records of discourse found.</p>

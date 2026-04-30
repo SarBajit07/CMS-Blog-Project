@@ -26,6 +26,9 @@ import {
 } from 'lucide-react';
 import Image from '@tiptap/extension-image';
 
+import { apiFetch } from '@/lib/api';
+import { toast } from 'sonner';
+
 interface RichTextEditorProps {
   value: string;
   onChange: (value: string) => void;
@@ -41,6 +44,22 @@ const MenuBar = ({ editor }: { editor: any }) => {
     const url = window.prompt('URL');
     if (url) {
       editor.chain().focus().setLink({ href: url }).run();
+    }
+  };
+
+  const onImageUpload = async (file: File) => {
+    const formData = new FormData();
+    formData.append('file', file);
+    try {
+      const res = await apiFetch('/upload', { method: 'POST', body: formData });
+      if (res.success) {
+        editor.chain().focus().setImage({ src: res.data.url }).run();
+        toast.success('Media inserted');
+      } else {
+        toast.error(res.message || 'Upload failed');
+      }
+    } catch (err) {
+      toast.error('Upload failed');
     }
   };
 
@@ -157,26 +176,13 @@ const MenuBar = ({ editor }: { editor: any }) => {
 
       <button
         type="button"
-        onClick={async () => {
+        onClick={() => {
           const input = document.createElement('input');
           input.type = 'file';
           input.accept = 'image/*,video/*';
           input.onchange = async () => {
             if (input.files && input.files[0]) {
-              const file = input.files[0];
-              const formData = new FormData();
-              formData.append('file', file);
-              try {
-                // We'll import apiFetch at the top of the file in the next replace
-                // or we can pass it down. Better to just import it.
-                const { apiFetch } = require('@/lib/api');
-                const res = await apiFetch('/upload', { method: 'POST', body: formData });
-                if (res.success) {
-                  editor.chain().focus().setImage({ src: res.data.url }).run();
-                }
-              } catch (err) {
-                alert('Upload failed');
-              }
+              onImageUpload(input.files[0]);
             }
           };
           input.click();
@@ -211,6 +217,8 @@ const MenuBar = ({ editor }: { editor: any }) => {
   );
 };
 
+import Dropcursor from '@tiptap/extension-dropcursor';
+
 export default function RichTextEditor({ value, onChange, placeholder }: RichTextEditorProps) {
   const editor = useEditor({
     extensions: [
@@ -235,8 +243,12 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
       Image.configure({
         inline: true,
         HTMLAttributes: {
-          class: 'max-w-full h-auto my-4',
+          class: 'max-w-full h-auto my-4 cursor-pointer hover:ring-2 hover:ring-[#1A1A1A] transition-all',
         },
+      }),
+      Dropcursor.configure({
+        color: '#1A1A1A',
+        width: 2,
       }),
     ],
     content: value,
@@ -247,6 +259,51 @@ export default function RichTextEditor({ value, onChange, placeholder }: RichTex
     editorProps: {
       attributes: {
         class: 'prose prose-sm md:prose-base max-w-none focus:outline-none min-h-[400px] px-4 py-6 font-light leading-relaxed text-[#1A1A1A]',
+      },
+      handleDrop: (view, event, slice, moved) => {
+        if (!moved && event.dataTransfer && event.dataTransfer.files && event.dataTransfer.files[0]) {
+          const file = event.dataTransfer.files[0];
+          if (file.type.startsWith('image/')) {
+            const formData = new FormData();
+            formData.append('file', file);
+            apiFetch('/upload', { method: 'POST', body: formData }).then(res => {
+              if (res.success) {
+                const { schema } = view.state;
+                const coordinates = view.posAtCoords({ left: event.clientX, top: event.clientY });
+                const node = schema.nodes.image.create({ src: res.data.url });
+                const transaction = view.state.tr.insert(coordinates?.pos || 0, node);
+                view.dispatch(transaction);
+                toast.success('Media dropped');
+              } else {
+                toast.error('Drop upload failed');
+              }
+            });
+            return true;
+          }
+        }
+        return false;
+      },
+      handlePaste: (view, event) => {
+        if (event.clipboardData && event.clipboardData.files && event.clipboardData.files[0]) {
+          const file = event.clipboardData.files[0];
+          if (file.type.startsWith('image/')) {
+            const formData = new FormData();
+            formData.append('file', file);
+            apiFetch('/upload', { method: 'POST', body: formData }).then(res => {
+              if (res.success) {
+                const { schema } = view.state;
+                const node = schema.nodes.image.create({ src: res.data.url });
+                const transaction = view.state.tr.replaceSelectionWith(node);
+                view.dispatch(transaction);
+                toast.success('Media pasted');
+              } else {
+                toast.error('Paste upload failed');
+              }
+            });
+            return true;
+          }
+        }
+        return false;
       },
     },
   });

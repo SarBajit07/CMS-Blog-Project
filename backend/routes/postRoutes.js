@@ -70,6 +70,24 @@ router.get('/id/:id', protect, postController.getPostById);
 
 /**
  * @swagger
+ * /api/posts/search:
+ *   get:
+ *     summary: Search posts by title or content
+ *     tags: [Posts]
+ *     parameters:
+ *       - in: query
+ *         name: q
+ *         required: true
+ *         schema:
+ *           type: string
+ *     responses:
+ *       200:
+ *         description: Search results
+ */
+router.get('/search', postController.searchPosts);
+
+/**
+ * @swagger
  * /api/posts/{slug}:
  *   get:
  *     summary: Get post by slug

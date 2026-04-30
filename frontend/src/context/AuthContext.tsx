@@ -10,6 +10,7 @@ interface User {
   username: string;
   email: string;
   role: string;
+  avatarUrl: string | null;
 }
 
 interface AuthContextType {
@@ -18,6 +19,7 @@ interface AuthContextType {
   login: (email: string, password: string) => Promise<void>;
   register: (username: string, email: string, password: string) => Promise<void>;
   logout: () => void;
+  updateUser: (userData: Partial<User>) => void;
 }
 
 const AuthContext = createContext<AuthContextType | undefined>(undefined);
@@ -114,8 +116,17 @@ export function AuthProvider({ children }: { children: ReactNode }) {
       });
   };
 
+  const updateUser = (userData: Partial<User>) => {
+    setUser((prevUser) => {
+      if (!prevUser) return null;
+      const updatedUser = { ...prevUser, ...userData };
+      localStorage.setItem('user', JSON.stringify(updatedUser));
+      return updatedUser;
+    });
+  };
+
   return (
-    <AuthContext.Provider value={{ user, loading, login, register, logout }}>
+    <AuthContext.Provider value={{ user, loading, login, register, logout, updateUser }}>
       {children}
     </AuthContext.Provider>
   );

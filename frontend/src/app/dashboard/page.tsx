@@ -5,6 +5,7 @@ import Link from 'next/link';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import { useAuth } from '@/context/AuthContext';
 import { apiFetch } from '@/lib/api';
+import { toast } from 'sonner';
 import { Loader2, Plus, Edit3, Trash2, Clock, CheckCircle } from 'lucide-react';
 
 interface Post {
@@ -53,11 +54,12 @@ function DashboardPage() {
       });
       if (response.success) {
         setPosts((prev) => prev.filter(p => p.id !== id));
+        toast.success('Story deleted');
       } else {
-        alert(response.message || 'Failed to delete post');
+        toast.error(response.message || 'Failed to delete post');
       }
     } catch (err: any) {
-      alert(err.message || 'An unexpected error occurred while deleting');
+      toast.error(err.message || 'An unexpected error occurred while deleting');
     } finally {
       setIsDeleting(null);
     }
@@ -111,20 +113,36 @@ function DashboardPage() {
           
           {(user?.role === 'admin' || user?.role === 'superadmin') ? (
             <div className="p-6 border-r border-b border-[#1A1A1A] bg-[#F9FAFB] col-span-2 md:col-span-2 flex flex-col justify-between">
-              <span className="text-[10px] font-bold tracking-[0.2em] uppercase text-[#777777] block mb-4">Taxonomy Management</span>
-              <div className="flex gap-6">
+              <span className="text-[10px] font-bold tracking-[0.2em] uppercase text-[#777777] block mb-4">Administration</span>
+              <div className="flex flex-wrap gap-x-6 gap-y-4">
                 <Link 
-                  href="/dashboard/categories"
+                  href="/dashboard/admin/categories"
                   className="text-xs font-bold tracking-widest uppercase border-b border-[#1A1A1A] pb-1 hover:text-[#777777] transition-colors"
                 >
                   Categories
                 </Link>
                 <Link 
-                  href="/dashboard/tags"
+                  href="/dashboard/admin/tags"
                   className="text-xs font-bold tracking-widest uppercase border-b border-[#1A1A1A] pb-1 hover:text-[#777777] transition-colors"
                 >
                   Tags
                 </Link>
+                {user?.role === 'superadmin' && (
+                  <>
+                    <Link 
+                      href="/dashboard/admin/users"
+                      className="text-xs font-bold tracking-widest uppercase border-b border-[#1A1A1A] pb-1 hover:text-[#777777] transition-colors"
+                    >
+                      Users
+                    </Link>
+                    <Link 
+                      href="/dashboard/admin/comments"
+                      className="text-xs font-bold tracking-widest uppercase border-b border-[#1A1A1A] pb-1 hover:text-[#777777] transition-colors"
+                    >
+                      Moderation
+                    </Link>
+                  </>
+                )}
               </div>
             </div>
           ) : (

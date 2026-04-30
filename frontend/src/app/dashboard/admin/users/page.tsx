@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Loader2, Edit2, Trash2, X, Check, Shield } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
+import { toast } from 'sonner';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import { useAuth } from '@/context/AuthContext';
 
@@ -56,11 +57,12 @@ function UsersManagementPage() {
       if (response.success) {
         setUsers(users.map(u => u.id === id ? response.data.user : u));
         setEditingId(null);
+        toast.success('User role updated');
       } else {
-        alert(response.message || 'Failed to update user role');
+        toast.error(response.message || 'Failed to update user role');
       }
     } catch (err: any) {
-      alert(err.message || 'An error occurred');
+      toast.error(err.message || 'An error occurred');
     } finally {
       setIsSubmitting(false);
     }
@@ -74,11 +76,12 @@ function UsersManagementPage() {
       });
       if (response.success) {
         setUsers(users.filter(u => u.id !== id));
+        toast.success('User deleted');
       } else {
-        alert(response.message || 'Failed to delete user');
+        toast.error(response.message || 'Failed to delete user');
       }
     } catch (err: any) {
-      alert(err.message || 'An error occurred');
+      toast.error(err.message || 'An error occurred');
     }
   };
 

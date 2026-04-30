@@ -6,8 +6,21 @@ const response = require('../utils/responseHelper');
 // @route   GET /api/posts
 const getPosts = async (req, res, next) => {
   try {
-    const posts = await PostModel.getAll();
-    return response.success(res, 200, { posts });
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 10;
+    const offset = (page - 1) * limit;
+
+    const { posts, total } = await PostModel.getAll(limit, offset);
+    
+    return response.success(res, 200, { 
+      posts,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit)
+      }
+    });
   } catch (err) {
     next(err);
   }
@@ -163,6 +176,35 @@ const getPostById = async (req, res, next) => {
   }
 };
 
+// @desc    Search posts
+// @route   GET /api/posts/search
+const searchPosts = async (req, res, next) => {
+  try {
+    const { q } = req.query;
+    if (!q) {
+      return response.success(res, 200, { posts: [], pagination: { total: 0, page: 1, limit: 10, totalPages: 0 } });
+    }
+
+    const page = parseInt(req.query.page, 10) || 1;
+    const limit = parseInt(req.query.limit, 10) || 10;
+    const offset = (page - 1) * limit;
+
+    const { posts, total } = await PostModel.search(q, limit, offset);
+    
+    return response.success(res, 200, { 
+      posts,
+      pagination: {
+        total,
+        page,
+        limit,
+        totalPages: Math.ceil(total / limit)
+      }
+    });
+  } catch (err) {
+    next(err);
+  }
+};
+
 module.exports = {
   getPosts,
   getPost,
@@ -171,4 +213,5 @@ module.exports = {
   deletePost,
   getMyPosts,
   getPostById,
+  searchPosts,
 };

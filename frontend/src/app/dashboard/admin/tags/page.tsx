@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Loader2, Plus, Edit2, Trash2, X, Check } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
+import { toast } from 'sonner';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import { useAuth } from '@/context/AuthContext';
 
@@ -57,11 +58,12 @@ function TagsManagementPage() {
         setTags([...tags, response.data.tag]);
         setIsAdding(false);
         setFormData({ name: '' });
+        toast.success('Tag established');
       } else {
-        alert(response.message || 'Failed to create tag');
+        toast.error(response.message || 'Failed to create tag');
       }
     } catch (err: any) {
-      alert(err.message || 'An error occurred');
+      toast.error(err.message || 'An error occurred');
     } finally {
       setIsSubmitting(false);
     }
@@ -80,11 +82,12 @@ function TagsManagementPage() {
         setTags(tags.map(t => t.id === editingId ? response.data.tag : t));
         setEditingId(null);
         setFormData({ name: '' });
+        toast.success('Tag updated');
       } else {
-        alert(response.message || 'Failed to update tag');
+        toast.error(response.message || 'Failed to update tag');
       }
     } catch (err: any) {
-      alert(err.message || 'An error occurred');
+      toast.error(err.message || 'An error occurred');
     } finally {
       setIsSubmitting(false);
     }
@@ -98,11 +101,12 @@ function TagsManagementPage() {
       });
       if (response.success) {
         setTags(tags.filter(t => t.id !== id));
+        toast.success('Tag deleted');
       } else {
-        alert(response.message || 'Failed to delete tag');
+        toast.error(response.message || 'Failed to delete tag');
       }
     } catch (err: any) {
-      alert(err.message || 'An error occurred');
+      toast.error(err.message || 'An error occurred');
     }
   };
 

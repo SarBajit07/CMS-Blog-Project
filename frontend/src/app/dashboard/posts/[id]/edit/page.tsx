@@ -8,6 +8,7 @@ import { zodResolver } from '@hookform/resolvers/zod';
 import { z } from 'zod';
 import { ArrowLeft, Loader2, Save, Send } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
+import { toast } from 'sonner';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import RichTextEditor from '@/components/dashboard/RichTextEditor';
 
@@ -109,14 +110,17 @@ function EditPostPage() {
       });
 
       if (response.success) {
+        toast.success('Story updated successfully');
         // Redirect back to dashboard on success
         router.push('/dashboard');
         router.refresh();
       } else {
         setSubmitError(response.message || 'Failed to update story');
+        toast.error(response.message || 'Failed to update story');
       }
     } catch (err: any) {
       setSubmitError(err.message || 'An unexpected error occurred');
+      toast.error(err.message || 'An unexpected error occurred');
     }
   };
 
@@ -239,11 +243,12 @@ function EditPostPage() {
                         const res = await apiFetch('/upload', { method: 'POST', body: formData });
                         if (res.success) {
                           setValue('cover_image_url', res.data.url, { shouldValidate: true });
+                          toast.success('Cover image uploaded');
                         } else {
-                          alert(res.message || 'Upload failed');
+                          toast.error(res.message || 'Upload failed');
                         }
                       } catch (err) {
-                        alert('Upload failed');
+                        toast.error('Upload failed');
                       }
                     }
                   };

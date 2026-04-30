@@ -80,6 +80,7 @@ const login = async (req, res, next) => {
         username: user.username,
         email: user.email,
         role: user.role,
+        avatarUrl: user.avatar_url,
       },
     }, 'Login successful');
   } catch (err) {
@@ -159,8 +160,32 @@ const me = async (req, res, next) => {
         username: user.username,
         email: user.email,
         role: user.role,
+        avatarUrl: user.avatar_url,
       },
     });
+  } catch (err) {
+    next(err);
+  }
+};
+
+// @desc    Update current user profile
+// @route   PATCH /api/auth/me
+const updateMe = async (req, res, next) => {
+  try {
+    const { avatarUrl } = req.body;
+    
+    // req.user is populated by 'protect' middleware
+    const updatedUser = await UserModel.updateProfile(req.user.id, { avatar_url: avatarUrl });
+
+    return response.success(res, 200, {
+      user: {
+        id: updatedUser.id,
+        username: updatedUser.username,
+        email: updatedUser.email,
+        role: updatedUser.role,
+        avatarUrl: updatedUser.avatar_url,
+      }
+    }, 'Profile updated successfully');
   } catch (err) {
     next(err);
   }
@@ -178,5 +203,6 @@ module.exports = {
   login,
   refresh,
   me,
+  updateMe,
   logout,
 };

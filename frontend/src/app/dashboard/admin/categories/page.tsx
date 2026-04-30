@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Loader2, Plus, Edit2, Trash2, X, Check } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
+import { toast } from 'sonner';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import { useAuth } from '@/context/AuthContext';
 
@@ -58,11 +59,12 @@ function CategoriesManagementPage() {
         setCategories([...categories, response.data.category]);
         setIsAdding(false);
         setFormData({ name: '', description: '' });
+        toast.success('Category created successfully');
       } else {
-        alert(response.message || 'Failed to create category');
+        toast.error(response.message || 'Failed to create category');
       }
     } catch (err: any) {
-      alert(err.message || 'An error occurred');
+      toast.error(err.message || 'An error occurred');
     } finally {
       setIsSubmitting(false);
     }
@@ -81,11 +83,12 @@ function CategoriesManagementPage() {
         setCategories(categories.map(c => c.id === editingId ? response.data.category : c));
         setEditingId(null);
         setFormData({ name: '', description: '' });
+        toast.success('Category updated successfully');
       } else {
-        alert(response.message || 'Failed to update category');
+        toast.error(response.message || 'Failed to update category');
       }
     } catch (err: any) {
-      alert(err.message || 'An error occurred');
+      toast.error(err.message || 'An error occurred');
     } finally {
       setIsSubmitting(false);
     }
@@ -99,11 +102,12 @@ function CategoriesManagementPage() {
       });
       if (response.success) {
         setCategories(categories.filter(c => c.id !== id));
+        toast.success('Category deleted');
       } else {
-        alert(response.message || 'Failed to delete category');
+        toast.error(response.message || 'Failed to delete category');
       }
     } catch (err: any) {
-      alert(err.message || 'An error occurred');
+      toast.error(err.message || 'An error occurred');
     }
   };
 

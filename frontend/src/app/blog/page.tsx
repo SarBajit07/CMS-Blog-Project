@@ -4,6 +4,8 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Loader2, Search } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
+import { useSearchParams, useRouter } from 'next/navigation';
+import { PostRowSkeleton } from '@/components/PostSkeleton';
 
 interface Category {
   id: number;
@@ -22,39 +24,78 @@ interface Post {
 }
 
 export default function BlogArchivePage() {
+  const searchParams = useSearchParams();
+  const q = searchParams?.get('q');
+  
   const [posts, setPosts] = useState<Post[]>([]);
   const [categories, setCategories] = useState<Category[]>([]);
   const [loading, setLoading] = useState(true);
+  const [loadingMore, setLoadingMore] = useState(false);
   const [error, setError] = useState<string | null>(null);
-  const [searchTerm, setSearchTerm] = useState('');
+  const [searchTerm, setSearchTerm] = useState(q || '');
   const [selectedCategory, setSelectedCategory] = useState<string | null>(null);
+  
+  // Pagination state
+  const [page, setPage] = useState(1);
+  const [hasMore, setHasMore] = useState(false);
 
   useEffect(() => {
-    const fetchData = async () => {
-      try {
-        const [postsRes, catsRes] = await Promise.all([
-          apiFetch('/posts'),
-          apiFetch('/categories')
-        ]);
+    fetchInitialData();
+  }, [q, selectedCategory]);
 
-        if (postsRes.success) {
-          setPosts(postsRes.data.posts);
-        } else {
-          setError(postsRes.message || 'Failed to load archive');
-        }
-
-        if (catsRes.success) {
-          setCategories(catsRes.data.categories);
-        }
-      } catch (err: any) {
-        setError(err.message || 'An error occurred');
-      } finally {
-        setLoading(false);
+  const fetchInitialData = async () => {
+    setLoading(true);
+    setPage(1);
+    try {
+      let response;
+      if (q) {
+        response = await apiFetch(`/posts/search`, { params: { q, page: '1', limit: '10' } });
+        setHasMore(response.data.pagination.page < response.data.pagination.totalPages);
+      } else {
+        response = await apiFetch('/posts', { params: { page: '1', limit: '10' } });
+        setHasMore(response.data.pagination.page < response.data.pagination.totalPages);
       }
-    };
 
-    fetchData();
-  }, []);
+      if (response.success) {
+        setPosts(response.data.posts);
+      } else {
+        setError(response.message || 'Failed to load archive');
+      }
+
+      const catsRes = await apiFetch('/categories');
+      if (catsRes.success) {
+        setCategories(catsRes.data.categories);
+      }
+    } catch (err: any) {
+      setError(err.message || 'An error occurred');
+    } finally {
+      setLoading(false);
+    }
+  };
+
+  const handleLoadMore = async () => {
+    if (loadingMore || !hasMore) return;
+    setLoadingMore(true);
+    const nextPage = page + 1;
+    try {
+      let response;
+      if (q) {
+        response = await apiFetch('/posts/search', { params: { q, page: nextPage.toString(), limit: '10' } });
+      } else {
+        response = await apiFetch('/posts', { params: { page: nextPage.toString(), limit: '10' } });
+      }
+
+      if (response.success) {
+        setPosts([...posts, ...response.data.posts]);
+        setPage(nextPage);
+        setHasMore(response.data.pagination.page < response.data.pagination.totalPages);
+      }
+    } catch (err) {
+      console.error('Failed to load more posts', err);
+    } finally {
+      setLoadingMore(false);
+    }
+  };
 
   const formatDate = (dateString: string) => {
     if (!dateString) return 'DRAFT';
@@ -66,15 +107,20 @@ export default function BlogArchivePage() {
     }).toUpperCase();
   };
 
-  const filteredPosts = posts.filter(post => {
-    const matchesSearch = post.title.toLowerCase().includes(searchTerm.toLowerCase()) ||
-                         post.author_name.toLowerCase().includes(searchTerm.toLowerCase());
-    
-    const matchesCategory = !selectedCategory || 
-                           post.categories?.some(cat => cat.slug === selectedCategory);
-    
-    return matchesSearch && matchesCategory;
-  });
+  const filteredPosts = selectedCategory 
+    ? posts.filter(post => post.categories?.some(cat => cat.slug === selectedCategory))
+    : posts;
+
+  const router = useRouter();
+
+  const handleSearchSubmit = (e: React.FormEvent) => {
+    e.preventDefault();
+    if (searchTerm.trim()) {
+      router.push(`/blog?q=${encodeURIComponent(searchTerm.trim())}`);
+    } else {
+      router.push('/blog');
+    }
+  };
 
   return (
     <div className="min-h-screen bg-[#FAFAFA] text-[#1A1A1A]">
@@ -85,16 +131,18 @@ export default function BlogArchivePage() {
           <Link href="/" className="inline-flex items-center gap-2 text-xs font-bold tracking-widest uppercase mb-12 hover:text-[#777777] transition-colors">
             <ArrowLeft size={14} /> Back to Home
           </Link>
-          <h1 className="font-display text-5xl md:text-6xl mb-6">The Full Archive.</h1>
+          <h1 className="font-display text-5xl md:text-6xl mb-6">
+            {q ? `Search: ${q}` : 'The Full Archive.'}
+          </h1>
           <p className="text-lg text-[#474747] font-light max-w-2xl">
-            A comprehensive record of all published editorial pieces, stories, and intellectual explorations.
+            {q ? `Records matching your query in the editorial archives.` : 'A comprehensive record of all published editorial pieces, stories, and intellectual explorations.'}
           </p>
         </header>
 
         {/* Search & Filter Bar */}
         <div className="flex flex-col md:flex-row md:items-center justify-between gap-8 mb-12">
           {/* Search */}
-          <div className="relative flex-1 max-w-md">
+          <form onSubmit={handleSearchSubmit} className="relative flex-1 max-w-md">
             <div className="absolute inset-y-0 left-0 pl-4 flex items-center pointer-events-none text-[#777777]">
               <Search size={16} />
             </div>
@@ -105,7 +153,7 @@ export default function BlogArchivePage() {
               value={searchTerm}
               onChange={(e) => setSearchTerm(e.target.value)}
             />
-          </div>
+          </form>
 
           {/* Category Filter */}
           <div className="flex flex-wrap items-center gap-3">
@@ -128,9 +176,10 @@ export default function BlogArchivePage() {
         </div>
 
         {loading ? (
-          <div className="flex flex-col items-center justify-center py-24 border border-[#1A1A1A] bg-white">
-            <Loader2 className="animate-spin mb-4" size={32} />
-            <p className="text-xs tracking-widest uppercase font-bold">Scanning the indexes...</p>
+          <div className="space-y-12">
+            {[...Array(5)].map((_, i) => (
+              <PostRowSkeleton key={i} />
+            ))}
           </div>
         ) : error ? (
           <div className="p-12 border border-[#1A1A1A] bg-white text-center">
@@ -160,7 +209,7 @@ export default function BlogArchivePage() {
                       </h2>
                     </Link>
                     <p className="text-[#474747] font-light max-w-3xl leading-relaxed">
-                      {post.excerpt || "No excerpt available for this edition."}
+                      {post.excerpt || (post.body ? post.body.replace(/<[^>]*>/g, '').substring(0, 150) + '...' : "No excerpt available for this edition.")}
                     </p>
                   </div>
                   <div className="md:text-right">
@@ -170,6 +219,20 @@ export default function BlogArchivePage() {
                 </div>
               </article>
             ))}
+          </div>
+        )}
+
+        {/* Load More Button */}
+        {hasMore && !selectedCategory && (
+          <div className="mt-20 flex justify-center">
+            <button
+              onClick={handleLoadMore}
+              disabled={loadingMore}
+              className="px-12 py-4 border border-[#1A1A1A] text-[#1A1A1A] text-xs font-bold tracking-widest uppercase hover:bg-[#1A1A1A] hover:text-white transition-all flex items-center gap-3 disabled:opacity-50"
+            >
+              {loadingMore ? <Loader2 size={16} className="animate-spin" /> : null}
+              {loadingMore ? 'Accessing Archives' : 'Load More Editions'}
+            </button>
           </div>
         )}
 

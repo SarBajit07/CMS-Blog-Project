@@ -4,6 +4,7 @@ import { useState, useEffect } from 'react';
 import Link from 'next/link';
 import { ArrowLeft, Loader2, Trash2, Check, X, Eye } from 'lucide-react';
 import { apiFetch } from '@/lib/api';
+import { toast } from 'sonner';
 import ProtectedRoute from '@/components/auth/ProtectedRoute';
 import { useAuth } from '@/context/AuthContext';
 
@@ -50,11 +51,12 @@ function CommentsManagementPage() {
       });
       if (response.success) {
         setComments(comments.map(c => c.id === id ? { ...c, is_approved: !currentStatus } : c));
+        toast.success(currentStatus ? 'Approval revoked' : 'Comment approved');
       } else {
-        alert(response.message || 'Failed to update status');
+        toast.error(response.message || 'Failed to update status');
       }
     } catch (err: any) {
-      alert(err.message || 'An error occurred');
+      toast.error(err.message || 'An error occurred');
     }
   };
 
@@ -66,11 +68,12 @@ function CommentsManagementPage() {
       });
       if (response.success) {
         setComments(comments.filter(c => c.id !== id));
+        toast.success('Comment deleted');
       } else {
-        alert(response.message || 'Failed to delete comment');
+        toast.error(response.message || 'Failed to delete comment');
       }
     } catch (err: any) {
-      alert(err.message || 'An error occurred');
+      toast.error(err.message || 'An error occurred');
     }
   };
 

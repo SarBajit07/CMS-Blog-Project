@@ -41,8 +41,11 @@ const updateRole = async (id, role) => {
   return result.rows[0];
 };
 
-const deleteById = async (id) => {
-  const result = await db.query('DELETE FROM users WHERE id = $1 RETURNING id', [id]);
+const updateProfile = async (id, { avatar_url }) => {
+  const result = await db.query(
+    'UPDATE users SET avatar_url = COALESCE($1, avatar_url), updated_at = NOW() WHERE id = $2 RETURNING id, username, email, role, avatar_url',
+    [avatar_url, id]
+  );
   return result.rows[0];
 };
 
@@ -53,5 +56,6 @@ module.exports = {
   create,
   getAll,
   updateRole,
+  updateProfile,
   deleteById,
 };

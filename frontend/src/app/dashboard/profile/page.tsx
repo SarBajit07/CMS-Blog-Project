@@ -8,13 +8,15 @@ import { ArrowLeft, Loader2, Save } from 'lucide-react';
 import Link from 'next/link';
 
 function ProfilePage() {
-  const { user } = useAuth();
+  const { user, updateUser } = useAuth();
   const [avatarUrl, setAvatarUrl] = useState('');
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [message, setMessage] = useState({ type: '', text: '' });
 
   useEffect(() => {
-    // Here we would set the avatar URL if it was returned by the auth context
+    if (user?.avatarUrl) {
+      setAvatarUrl(user.avatarUrl);
+    }
   }, [user]);
 
   const handleUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -27,7 +29,7 @@ function ProfilePage() {
         const res = await apiFetch('/upload', { method: 'POST', body: formData });
         if (res.success) {
           setAvatarUrl(res.data.url);
-          setMessage({ type: 'success', text: 'Image uploaded successfully.' });
+          setMessage({ type: 'success', text: 'Image uploaded successfully. Don\'t forget to save!' });
         } else {
           setMessage({ type: 'error', text: res.message || 'Upload failed' });
         }
@@ -39,12 +41,21 @@ function ProfilePage() {
 
   const handleSave = async () => {
     setIsSubmitting(true);
+    setMessage({ type: '', text: '' });
     try {
-      // Fake delay to simulate profile save (since backend lacks full profile update currently)
-      await new Promise(r => setTimeout(r, 1000));
-      setMessage({ type: 'success', text: 'Profile updated successfully.' });
-    } catch (err) {
-      setMessage({ type: 'error', text: 'Failed to update profile.' });
+      const res = await apiFetch('/auth/me', {
+        method: 'PATCH',
+        body: JSON.stringify({ avatarUrl }),
+      });
+
+      if (res.success) {
+        updateUser({ avatarUrl: res.data.user.avatarUrl });
+        setMessage({ type: 'success', text: 'Profile updated successfully.' });
+      } else {
+        setMessage({ type: 'error', text: res.message || 'Failed to update profile.' });
+      }
+    } catch (err: any) {
+      setMessage({ type: 'error', text: err.message || 'Failed to update profile.' });
     } finally {
       setIsSubmitting(false);
     }
